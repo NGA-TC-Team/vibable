@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { PhaseWaterProgress } from "@/components/editor/phase-water-progress";
 import {
   Tooltip,
   TooltipContent,
@@ -104,12 +104,11 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
             <TooltipContent side="right">펼치기</TooltipContent>
           </Tooltip>
 
-          <div className="relative mb-2 h-16 w-1.5 rounded-full bg-muted">
-            <div
-              className="absolute bottom-0 w-full rounded-full bg-primary transition-all"
-              style={{ height: `${progressPercent}%` }}
-            />
-          </div>
+          <PhaseWaterProgress
+            value={progressPercent}
+            orientation="vertical"
+            className="mb-2 h-16 w-3 shrink-0"
+          />
           <span className="mb-2 text-[10px] text-muted-foreground">{completedCount}/7</span>
 
           {Array.from({ length: 7 }).map((_, i) => {
@@ -146,7 +145,11 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
     <nav className="flex flex-col gap-1">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex flex-1 items-center gap-2">
-          <Progress value={progressPercent} className="h-1.5 flex-1" />
+          <PhaseWaterProgress
+            value={progressPercent}
+            orientation="horizontal"
+            className="h-3 min-w-0 flex-1"
+          />
           <span className="text-xs text-muted-foreground">{completedCount}/7</span>
         </div>
         <Button variant="ghost" size="icon-xs" onClick={toggleSidebar} className="ml-2">

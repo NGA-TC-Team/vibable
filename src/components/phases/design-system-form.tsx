@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Plus, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -13,15 +14,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { StringList } from "@/components/editor/dynamic-list";
 import { SectionHeader } from "@/components/editor/section-header";
+import { SectionGroup } from "@/components/editor/section-group";
 import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
+import {
+  designSystemPresets,
+  PRESET_CATEGORIES,
+  type DesignSystemPreset,
+} from "@/lib/presets/design-system-presets";
+import { COMPONENT_TEMPLATES } from "@/lib/presets/component-templates";
+import { PresetCard } from "./design-system-preset-card";
+import { ComponentStylePreview } from "./component-style-preview";
+import { ComponentTokenEditor } from "./component-token-editor";
 import type {
   DesignSystemPhase,
   ColorToken,
   TypeScaleEntry,
   ComponentStyle,
+  ComponentCategory,
   GlossaryEntry,
 } from "@/types/phases";
 
@@ -35,9 +52,49 @@ const toneLabels: Record<number, string> = {
 
 export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
   const { data, patchData } = usePhaseData("designSystem");
+  const [presetCategory, setPresetCategory] = useState<string>("all");
+  const [presetSearch, setPresetSearch] = useState("");
+
   if (!data) return null;
 
   const patch = (p: Partial<DesignSystemPhase>) => patchData(p);
+
+  const applyPreset = (preset: DesignSystemPreset) => {
+    patchData({
+      visualTheme: {
+        mood: preset.visualTheme.mood,
+        density: preset.visualTheme.density,
+        philosophy: preset.visualTheme.philosophy,
+      },
+      colorPalette: preset.colorPalette,
+      typography: {
+        ...data.typography,
+        fontFamilies: preset.typography.fontFamilies,
+      },
+      presetSelection: {
+        ...data.presetSelection,
+        moodPreset: preset.id,
+      },
+      ...(preset.components ? { components: preset.components } : {}),
+    });
+  };
+
+  const resetPreset = () => {
+    patchData({
+      visualTheme: { mood: "", density: "comfortable", philosophy: "" },
+      colorPalette: [],
+      typography: { ...data.typography, fontFamilies: [] },
+      presetSelection: undefined,
+    });
+  };
+
+  const filteredPresets = designSystemPresets.filter((p) => {
+    const catMatch = presetCategory === "all" || p.category === presetCategory;
+    const searchMatch = presetSearch === "" ||
+      p.name.toLowerCase().includes(presetSearch.toLowerCase()) ||
+      p.description.toLowerCase().includes(presetSearch.toLowerCase());
+    return catMatch && searchMatch;
+  });
 
   const updateNestedField = <
     K extends keyof DesignSystemPhase,
@@ -90,11 +147,15 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   // Components
-  const addComponent = () => {
+  const addComponentByCategory = (category: ComponentCategory) => {
+    const template = COMPONENT_TEMPLATES[category];
     const comp: ComponentStyle = {
-      component: "",
-      variants: "",
-      borderRadius: "",
+      component: template.defaultComponent.component ?? "",
+      category,
+      variants: template.defaultComponent.variants ?? "",
+      borderRadius: template.defaultComponent.borderRadius ?? "",
+      defaultStyle: template.defaultComponent.defaultStyle,
+      hoverStyle: template.defaultComponent.hoverStyle,
     };
     patch({ components: [...data.components, comp] });
   };
@@ -130,7 +191,57 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   return (
-    <div className="space-y-6">
+    <SectionGroup>
+      {/* § 0 Preset Selection */}
+      <section className="space-y-3">
+        <SectionHeader title="§ 0. 프리셋 선택 (선택사항)" tooltip="브랜드 디자인 시스템을 프리셋으로 빠르게 적용할 수 있습니다." />
+        <div className="flex gap-2">
+          <Select value={presetCategory} onValueChange={setPresetCategory}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="카테고리" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체</SelectItem>
+              {PRESET_CATEGORIES.map((cat) => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="프리셋 검색..."
+              value={presetSearch}
+              onChange={(e) => setPresetSearch(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {filteredPresets.map((preset) => (
+            <PresetCard
+              key={preset.id}
+              preset={preset}
+              isSelected={data.presetSelection?.moodPreset === preset.id}
+              onSelect={() => !disabled && applyPreset(preset)}
+            />
+          ))}
+        </div>
+        {filteredPresets.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-2">검색 결과 없음</p>
+        )}
+        <div className="flex gap-2">
+          <p className="flex-1 text-xs text-muted-foreground">
+            ✓ 프리셋을 적용한 후 개별 필드 수정 가능
+          </p>
+          {data.presetSelection?.moodPreset && !disabled && (
+            <Button variant="ghost" size="xs" onClick={resetPreset}>
+              초기화
+            </Button>
+          )}
+        </div>
+      </section>
+
       {/* § 1 Visual Theme */}
       <section className="space-y-3">
         <SectionHeader title="§ 1. 비주얼 테마" tooltip={SECTION_TOOLTIPS["designSystem.visualTheme"]} />
@@ -174,7 +285,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
       <section className="space-y-3">
         <SectionHeader title="§ 2. 컬러 팔레트" tooltip={SECTION_TOOLTIPS["designSystem.colorPalette"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addColor}>
+            <Button variant="outline" size="xs" onClick={addColor}>
               <Plus className="size-3.5" />
             </Button>
           )}
@@ -217,7 +328,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
       <section className="space-y-3">
         <SectionHeader title="§ 3. 타이포그래피" tooltip={SECTION_TOOLTIPS["designSystem.typography"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addTypeScale}>
+            <Button variant="outline" size="xs" onClick={addTypeScale}>
               <Plus className="size-3.5" />
             </Button>
           )}
@@ -269,16 +380,39 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
       <section className="space-y-3">
         <SectionHeader title="§ 4. 컴포넌트 스타일" tooltip={SECTION_TOOLTIPS["designSystem.components"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addComponent}>
-              <Plus className="size-3.5" />
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="xs">
+                  <Plus className="size-3.5" />
+                  추가
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1" align="end">
+                <div className="grid gap-0.5">
+                  {(Object.entries(COMPONENT_TEMPLATES) as [ComponentCategory, (typeof COMPONENT_TEMPLATES)[ComponentCategory]][]).map(
+                    ([key, tmpl]) => (
+                      <button
+                        key={key}
+                        className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-muted text-left w-full"
+                        onClick={() => addComponentByCategory(key)}
+                      >
+                        {tmpl.label}
+                      </button>
+                    ),
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </SectionHeader>
         {data.components.map((comp, i) => (
-          <div key={i} className="rounded-lg border p-3 space-y-2">
+          <div key={i} className="rounded-lg border p-3 space-y-3">
             <div className="flex gap-2">
+              <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded self-center">
+                {comp.category ?? "custom"}
+              </span>
               <Input
-                placeholder="컴포넌트 (Button, Card 등)"
+                placeholder="컴포넌트 이름"
                 value={comp.component}
                 onChange={(e) =>
                   updateComponent(i, { component: e.target.value })
@@ -304,8 +438,35 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
                 </Button>
               )}
             </div>
+            <ComponentStylePreview style={comp} />
+            <div className="space-y-1">
+              <ComponentTokenEditor
+                label="Default"
+                token={comp.defaultStyle}
+                onChange={(defaultStyle) => updateComponent(i, { defaultStyle })}
+                disabled={disabled}
+              />
+              <ComponentTokenEditor
+                label="Hover"
+                token={comp.hoverStyle}
+                onChange={(hoverStyle) => updateComponent(i, { hoverStyle })}
+                disabled={disabled}
+              />
+              <ComponentTokenEditor
+                label="Active"
+                token={comp.activeStyle}
+                onChange={(activeStyle) => updateComponent(i, { activeStyle })}
+                disabled={disabled}
+              />
+              <ComponentTokenEditor
+                label="Disabled"
+                token={comp.disabledStyle}
+                onChange={(disabledStyle) => updateComponent(i, { disabledStyle })}
+                disabled={disabled}
+              />
+            </div>
             <Textarea
-              placeholder="variants 설명 (default, hover, active, disabled)"
+              placeholder="variants 설명 (primary, secondary, ghost, outlined)"
               value={comp.variants}
               onChange={(e) =>
                 updateComponent(i, { variants: e.target.value })
@@ -408,7 +569,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
           <div className="flex items-center justify-between">
             <Label className="text-xs">용어 사전</Label>
             {!disabled && (
-              <Button variant="ghost" size="xs" onClick={addGlossary}>
+              <Button variant="outline" size="xs" onClick={addGlossary}>
                 <Plus className="size-3" />
               </Button>
             )}
@@ -440,6 +601,6 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
           ))}
         </div>
       </section>
-    </div>
+    </SectionGroup>
   );
 }

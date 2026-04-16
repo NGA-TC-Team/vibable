@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface DynamicListProps<T> {
   items: T[];
@@ -35,15 +36,15 @@ export function DynamicList<T>({
               variant="ghost"
               size="icon-xs"
               onClick={() => onRemove(i)}
-              className="mt-1 shrink-0"
+              className="mt-1 shrink-0 hover:border-destructive/40 hover:text-destructive"
             >
-              <Trash2 className="size-3.5 text-muted-foreground hover:text-destructive" />
+              <Trash2 className="size-3.5 text-muted-foreground transition-colors group-hover/button:text-destructive" />
             </Button>
           )}
         </div>
       ))}
       {!disabled && (
-        <Button variant="ghost" size="xs" onClick={onAdd}>
+        <Button variant="outline" size="xs" onClick={onAdd}>
           <Plus className="size-3.5" />
           {addLabel}
         </Button>
@@ -78,8 +79,7 @@ export function StringList({
       emptyMessage={emptyMessage}
       disabled={disabled}
       renderItem={(item, i) => (
-        <input
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        <Input
           placeholder={placeholder}
           value={item}
           onChange={(e) => {

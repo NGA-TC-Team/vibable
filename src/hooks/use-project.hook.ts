@@ -50,6 +50,7 @@ interface CreateProjectInput {
   workspaceId: string;
   name: string;
   type: ProjectType;
+  initialPhases?: Project["phases"];
 }
 
 export function useCreateProject() {
@@ -63,7 +64,7 @@ export function useCreateProject() {
         name: input.name,
         type: input.type,
         currentPhase: 0,
-        phases: createDefaultPhaseData() as Project["phases"],
+        phases: input.initialPhases ?? (createDefaultPhaseData() as Project["phases"]),
         createdAt: now,
         updatedAt: now,
       };

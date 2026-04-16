@@ -5,17 +5,7 @@ import { stripMemos } from "@/lib/strip-memos";
 import { generateDesignMd } from "@/components/export/design-md-generator";
 import { APP_VERSION, SCHEMA_VERSION } from "@/lib/constants";
 import { PHASE_KEYS, type Project, type PhaseKey } from "@/types/phases";
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+import { downloadBlob } from "@/lib/download";
 
 export function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);

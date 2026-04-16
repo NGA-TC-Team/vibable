@@ -1,6 +1,15 @@
 "use client";
 
 import { usePhaseData } from "@/hooks/use-phase.hook";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ComponentStylePreview } from "@/components/phases/component-style-preview";
 
 export function DesignSystemPreview() {
   const { data } = usePhaseData("designSystem");
@@ -35,14 +44,14 @@ export function DesignSystemPreview() {
       {data.typography.scale.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-base font-semibold">Typography</h2>
-          <table className="w-full text-xs">
-            <thead><tr className="border-b text-muted-foreground"><th className="text-left py-1">이름</th><th className="text-left py-1">크기</th><th className="text-left py-1">두께</th></tr></thead>
-            <tbody>
+          <Table className="text-xs">
+            <TableHeader><TableRow><TableHead>이름</TableHead><TableHead>크기</TableHead><TableHead>두께</TableHead></TableRow></TableHeader>
+            <TableBody>
               {data.typography.scale.map((s, i) => (
-                <tr key={i} className="border-b last:border-0"><td className="py-1">{s.name}</td><td className="py-1">{s.size}</td><td className="py-1">{s.weight}</td></tr>
+                <TableRow key={i}><TableCell>{s.name}</TableCell><TableCell>{s.size}</TableCell><TableCell>{s.weight}</TableCell></TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </section>
       )}
 
@@ -51,9 +60,20 @@ export function DesignSystemPreview() {
         <section className="space-y-2">
           <h2 className="text-base font-semibold">Components</h2>
           {data.components.map((c, i) => (
-            <div key={i} className="rounded border p-2">
-              <p className="font-medium">{c.component} <span className="text-xs text-muted-foreground">({c.borderRadius})</span></p>
-              <p className="text-muted-foreground">{c.variants}</p>
+            <div key={i} className="rounded border p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                  {c.category ?? "custom"}
+                </span>
+                <span className="text-sm font-medium">{c.component}</span>
+                <span className="text-xs text-muted-foreground">
+                  radius: {c.borderRadius}
+                </span>
+              </div>
+              <ComponentStylePreview style={c} />
+              {c.variants && (
+                <p className="text-xs text-muted-foreground">{c.variants}</p>
+              )}
             </div>
           ))}
         </section>
@@ -73,14 +93,14 @@ export function DesignSystemPreview() {
         <h2 className="text-base font-semibold">UX Writing</h2>
         <p className="text-muted-foreground">톤: {data.uxWriting.toneLevel}/5 · 에러 스타일: {data.uxWriting.errorMessageStyle}</p>
         {data.uxWriting.glossary.length > 0 && (
-          <table className="w-full text-xs">
-            <thead><tr className="border-b text-muted-foreground"><th className="text-left py-1">사용</th><th className="text-left py-1">피할 표현</th></tr></thead>
-            <tbody>
+          <Table className="text-xs">
+            <TableHeader><TableRow><TableHead>사용</TableHead><TableHead>피할 표현</TableHead></TableRow></TableHeader>
+            <TableBody>
               {data.uxWriting.glossary.map((g, i) => (
-                <tr key={i} className="border-b last:border-0"><td className="py-1">{g.term}</td><td className="py-1">{g.avoid}</td></tr>
+                <TableRow key={i}><TableCell>{g.term}</TableCell><TableCell>{g.avoid}</TableCell></TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </section>
     </div>

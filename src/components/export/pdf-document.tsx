@@ -72,10 +72,18 @@ const s = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
+    backgroundColor: "#f1f5f9",
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: "#e2e8f0",
     paddingBottom: 4,
     marginBottom: 2,
+  },
+  tableRowEven: {
+    flexDirection: "row" as const,
+    backgroundColor: "#f8fafc",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#ddd",
+    paddingVertical: 4,
   },
   tableCell: { flex: 1, fontSize: 9 },
   tableCellBold: { flex: 1, fontSize: 9, fontWeight: 700 },
@@ -447,6 +455,88 @@ function InfoArchitecturePage({ project }: { project: Project }) {
 
 function ScreenDesignPage({ project }: { project: Project }) {
   const d = project.phases.screenDesign;
+  const elementLabels: Record<string, string> = {
+    header: "Header",
+    text: "Text",
+    heading: "Heading",
+    button: "Button",
+    input: "Input",
+    image: "Image",
+    card: "Card",
+    list: "List",
+    divider: "Divider",
+    icon: "Icon",
+    bottomNav: "Bottom Nav",
+    sidebar: "Sidebar",
+    table: "Table",
+    form: "Form",
+    modal: "Modal",
+    tabs: "Tabs",
+    carousel: "Carousel",
+    avatar: "Avatar",
+    badge: "Badge",
+    toggle: "Toggle",
+    checkbox: "Checkbox",
+    radio: "Radio",
+    dropdown: "Dropdown",
+    searchbar: "Searchbar",
+    breadcrumb: "Breadcrumb",
+    pagination: "Pagination",
+    progressbar: "Progress",
+    map: "Map",
+    video: "Video",
+    chart: "Chart",
+    spacer: "Spacer",
+    grid: "Grid",
+    hstack: "HStack",
+    vstack: "VStack",
+  };
+
+  const getPageElements = (page: Project["phases"]["screenDesign"]["pages"][number]) => {
+    const seen = new Set<string>();
+    const viewports = ["mobile", "tablet", "desktop"] as const;
+    const states = ["idle", "loading", "offline", "error"] as const;
+    const sources = [
+      ...viewports.flatMap((viewport) => page.mockup?.[viewport] ?? []),
+      ...states.flatMap((state) =>
+        viewports.flatMap((viewport) => page.mockupByState?.[state]?.[viewport] ?? []),
+      ),
+    ];
+
+    return sources.filter((element) => {
+      if (seen.has(element.id)) return false;
+      seen.add(element.id);
+      return true;
+    });
+  };
+
+  const getInteractionElementLabel = (
+    page: Project["phases"]["screenDesign"]["pages"][number],
+    elementId: string,
+  ) => {
+    if (!elementId) return "-";
+
+    const elements = getPageElements(page);
+    let typeIndex = 0;
+
+    for (const element of elements) {
+      if (element.type === elements.find((candidate) => candidate.id === elementId)?.type) {
+        typeIndex += 1;
+      }
+
+      if (element.id === elementId) {
+        return `${elementLabels[element.type] ?? element.type} ${typeIndex}`;
+      }
+    }
+
+    return elementId;
+  };
+
+  const getPageReferenceLabel = (pageId: string) => {
+    const targetPage = d.pages.find((candidate) => candidate.id === pageId);
+    if (!targetPage) return pageId;
+    return targetPage.name || targetPage.route || pageId;
+  };
 
   return (
     <>
@@ -545,9 +635,11 @@ function ScreenDesignPage({ project }: { project: Project }) {
                   </View>
                   {page.interactions.map((ia, i) => (
                     <View key={i} style={s.tableRow}>
-                      <Text style={s.tableCell}>{ia.element}</Text>
+                      <Text style={s.tableCell}>{getInteractionElementLabel(page, ia.elementId)}</Text>
                       <Text style={s.tableCell}>{ia.trigger}</Text>
-                      <Text style={s.tableCell}>{ia.action}</Text>
+                      <Text style={s.tableCell}>
+                        {ia.actionKind === "other" ? ia.actionCustom || "-" : ia.actionKind || "-"}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -558,10 +650,14 @@ function ScreenDesignPage({ project }: { project: Project }) {
               <View style={{ marginBottom: 12 }}>
                 <Text style={s.subTitle}>연결 페이지</Text>
                 {page.inPages.filter(Boolean).length > 0 && (
-                  <Text style={s.paragraph}>In: {page.inPages.filter(Boolean).join(", ")}</Text>
+                  <Text style={s.paragraph}>
+                    In: {page.inPages.filter(Boolean).map(getPageReferenceLabel).join(", ")}
+                  </Text>
                 )}
                 {page.outPages.filter(Boolean).length > 0 && (
-                  <Text style={s.paragraph}>Out: {page.outPages.filter(Boolean).join(", ")}</Text>
+                  <Text style={s.paragraph}>
+                    Out: {page.outPages.filter(Boolean).map(getPageReferenceLabel).join(", ")}
+                  </Text>
                 )}
               </View>
             )}

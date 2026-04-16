@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { VibableLogo } from "@/components/vibable-logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { ProjectCard } from "@/components/workspace/project-card";
 import { CreateProjectModal } from "@/components/workspace/create-project-modal";
+import { ImportJsonModal } from "@/components/workspace/import-json-modal";
+import { EmptyState } from "@/components/workspace/empty-state";
+import { DataManagementMenu } from "@/components/workspace/data-management-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useWorkspace,
@@ -17,6 +21,7 @@ export function WorkspaceClient() {
   const { data: workspace } = useWorkspace();
   const { data: projects, isLoading } = useProjects(DEFAULT_WORKSPACE_ID);
   const deleteProject = useDeleteProject();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleDelete = (id: string) => {
     deleteProject.mutate(id, {
@@ -24,6 +29,8 @@ export function WorkspaceClient() {
       onError: () => toast.error("삭제에 실패했습니다"),
     });
   };
+
+  const isEmpty = !isLoading && projects?.length === 0;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,7 +51,10 @@ export function WorkspaceClient() {
               · {workspace?.name ?? "워크스페이스"}
             </span>
           </div>
-          <ModeToggle />
+          <div className="flex items-center gap-2">
+            <DataManagementMenu />
+            <ModeToggle />
+          </div>
         </div>
       </header>
 
@@ -55,6 +65,16 @@ export function WorkspaceClient() {
               <Skeleton key={i} className="h-[180px] rounded-4xl" />
             ))}
           </div>
+        ) : isEmpty ? (
+          <>
+            <EmptyState onCreateNew={() => setCreateOpen(true)} />
+            <CreateProjectModal
+              workspaceId={DEFAULT_WORKSPACE_ID}
+              open={createOpen}
+              onOpenChange={setCreateOpen}
+              trigger={null}
+            />
+          </>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects?.map((project) => (
@@ -65,17 +85,7 @@ export function WorkspaceClient() {
               />
             ))}
             <CreateProjectModal workspaceId={DEFAULT_WORKSPACE_ID} />
-          </div>
-        )}
-
-        {!isLoading && projects?.length === 0 && (
-          <div className="mt-12 text-center">
-            <p className="text-lg text-muted-foreground">
-              첫 프로젝트를 만들어 보세요
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground/70">
-              위의 + 버튼을 클릭하여 기획서 작성을 시작할 수 있습니다
-            </p>
+            <ImportJsonModal workspaceId={DEFAULT_WORKSPACE_ID} />
           </div>
         )}
       </main>

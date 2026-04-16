@@ -135,10 +135,14 @@ export interface ErrorState {
 }
 
 export interface Interaction {
-  element: string;
+  elementId: string;
   trigger: string;
-  action: string;
+  actionKind: string;
+  actionCustom?: string;
 }
+
+export type MockupViewportKey = "mobile" | "tablet" | "desktop";
+export type MockupNoteMode = "same" | "none" | "custom";
 
 export type MockupElementType =
   | "header"
@@ -185,6 +189,16 @@ export interface MockupElement {
   height: number;
   props: Record<string, string>;
   children?: string[];
+  designNote?: string;
+  designNoteByContext?: Partial<
+    Record<
+      `${ScreenState}:${MockupViewportKey}`,
+      {
+        mode: MockupNoteMode;
+        note?: string;
+      }
+    >
+  >;
 }
 
 export interface MockupViewport {
@@ -193,10 +207,20 @@ export interface MockupViewport {
   desktop: MockupElement[];
 }
 
+export type ScreenState = "idle" | "loading" | "offline" | "error";
+
+export interface MockupStateViewport {
+  idle: MockupViewport;
+  loading: MockupViewport;
+  offline: MockupViewport;
+  error: MockupViewport;
+}
+
 export interface ScreenPage {
   id: string;
   name: string;
   route?: string;
+  entityIds: string[];
   uxIntent: {
     userGoal: string;
     businessIntent: string;
@@ -211,6 +235,7 @@ export interface ScreenPage {
   inPages: string[];
   outPages: string[];
   mockup?: MockupViewport;
+  mockupByState?: MockupStateViewport;
 }
 
 export interface ScreenDesignPhase {
@@ -258,11 +283,37 @@ export interface TypeScaleEntry {
   letterSpacing?: string;
 }
 
+export type ComponentCategory =
+  | "button"
+  | "card"
+  | "input"
+  | "badge"
+  | "navigation"
+  | "modal"
+  | "table"
+  | "custom";
+
+export interface ComponentStyleToken {
+  background?: string;
+  textColor?: string;
+  borderColor?: string;
+  borderRadius?: string;
+  padding?: string;
+  shadow?: string;
+  fontSize?: string;
+  fontWeight?: string;
+}
+
 export interface ComponentStyle {
   component: string;
+  category: ComponentCategory;
   variants: string;
   borderRadius: string;
   notes?: string;
+  defaultStyle?: ComponentStyleToken;
+  hoverStyle?: ComponentStyleToken;
+  activeStyle?: ComponentStyleToken;
+  disabledStyle?: ComponentStyleToken;
 }
 
 export interface GlossaryEntry {

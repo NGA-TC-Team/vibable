@@ -1,6 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
+import { Separator } from "@/components/ui/separator";
 import { ELEMENT_ICONS, ELEMENT_LABELS } from "./mockup-element";
 import type { MockupElementType } from "@/types/phases";
 
@@ -38,7 +39,7 @@ function PaletteItem({ type, isActive }: { type: MockupElementType; isActive: bo
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-accent transition-colors ${
+      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs transition-colors hover:bg-accent ${
         isDragging || isActive ? "opacity-30" : ""
       }`}
     >
@@ -50,13 +51,14 @@ function PaletteItem({ type, isActive }: { type: MockupElementType; isActive: bo
 
 export function ElementPalette({ activeId }: { activeId?: string | null }) {
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-2">
-      {CATEGORIES.map((cat) => (
-        <div key={cat.label}>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="flex h-full flex-col gap-6 px-2 py-4">
+      {CATEGORIES.map((cat, index) => (
+        <div key={cat.label} className="space-y-3">
+          {index > 0 ? <Separator className="mb-1" /> : null}
+          <p className="mb-2 pl-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {cat.label}
           </p>
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             {cat.types.map((type) => (
               <PaletteItem
                 key={type}

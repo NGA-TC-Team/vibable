@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { PhaseData, ProjectType } from "@/types/phases";
+import type { PhaseData, ProjectType, ScreenState } from "@/types/phases";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type ActiveViewport = "mobile" | "tablet" | "desktop";
@@ -21,9 +21,11 @@ export type EditorState = {
   isPrintPreview: boolean;
   printPreviewPage: number;
   activeScreenPageId: string | null;
+  activeScreenState: ScreenState;
   infoArchView: InfoArchView;
   infoArchDisplayMode: InfoArchDisplayMode;
   selectedFlowId: string | null;
+  selectedMockupElementId: string | null;
 
   setPhase: (phase: number) => void;
   togglePreview: () => void;
@@ -41,6 +43,8 @@ export type EditorState = {
   setPrintPreview: (on: boolean) => void;
   setPrintPreviewPage: (page: number) => void;
   setActiveScreenPageId: (id: string | null) => void;
+  setActiveScreenState: (state: ScreenState) => void;
+  setSelectedMockupElementId: (id: string | null) => void;
   reset: () => void;
 };
 
@@ -57,9 +61,11 @@ const initialState = {
   isPrintPreview: false,
   printPreviewPage: 0,
   activeScreenPageId: null as string | null,
+  activeScreenState: "idle" as ScreenState,
   infoArchView: "sitemap" as InfoArchView,
   infoArchDisplayMode: "diagram" as InfoArchDisplayMode,
   selectedFlowId: null as string | null,
+  selectedMockupElementId: null as string | null,
 };
 
 const devEnabled = process.env.NODE_ENV === "development";
@@ -91,6 +97,10 @@ export const useEditorStore = create<EditorState>()(
       setPrintPreviewPage: (printPreviewPage) => set({ printPreviewPage }),
       setActiveScreenPageId: (activeScreenPageId) =>
         set({ activeScreenPageId }),
+      setActiveScreenState: (activeScreenState) =>
+        set({ activeScreenState }),
+      setSelectedMockupElementId: (selectedMockupElementId) =>
+        set({ selectedMockupElementId }),
       reset: () => set({ ...initialState }),
     }),
     { name: "vibable:editor", enabled: devEnabled },

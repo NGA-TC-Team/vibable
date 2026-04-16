@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { StringList } from "@/components/editor/dynamic-list";
 import { SectionHeader } from "@/components/editor/section-header";
+import { SectionGroup } from "@/components/editor/section-group";
 import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { Persona, UserStory } from "@/types/phases";
@@ -64,12 +65,12 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   return (
-    <div className="space-y-6">
+    <SectionGroup>
       {/* Personas */}
       <section className="space-y-3">
         <SectionHeader title="페르소나" tooltip={SECTION_TOOLTIPS["userScenario.personas"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addPersona}>
+            <Button variant="outline" size="xs" onClick={addPersona}>
               <Plus className="size-3.5" />
               추가
             </Button>
@@ -129,7 +130,7 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
       <section className="space-y-3">
         <SectionHeader title="유저 스토리" tooltip={SECTION_TOOLTIPS["userScenario.userStories"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addStory}>
+            <Button variant="outline" size="xs" onClick={addStory}>
               <Plus className="size-3.5" />
               추가
             </Button>
@@ -206,6 +207,6 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
           disabled={disabled}
         />
       </section>
-    </div>
+    </SectionGroup>
   );
 }

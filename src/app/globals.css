@@ -128,3 +128,12 @@
     @apply font-sans;
   }
 }
+
+[data-slot="form-panel"] label {
+  padding-left: 0.5rem;
+}
+
+[data-slot="form-panel"] input,
+[data-slot="form-panel"] textarea {
+  padding: 0.625rem 0.75rem;
+}

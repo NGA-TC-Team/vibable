@@ -15,6 +15,7 @@ describe("screenDesignSchema", () => {
           id: "p1",
           name: "Dashboard",
           route: "/dashboard",
+          entityIds: ["entity-1"],
           uxIntent: { userGoal: "See overview", businessIntent: "Engagement" },
           states: {
             idle: "Shows data",
@@ -22,7 +23,7 @@ describe("screenDesignSchema", () => {
             offline: "Cached",
             errors: [{ type: "network" as const, description: "Retry" }],
           },
-          interactions: [{ element: "btn", trigger: "click", action: "navigate" }],
+          interactions: [{ elementId: "btn", trigger: "click", actionKind: "navigate" }],
           inPages: [],
           outPages: ["p2"],
         },
@@ -45,5 +46,23 @@ describe("screenDesignSchema", () => {
     const original = screenDesignSchema.parse({});
     const roundtripped = JSON.parse(JSON.stringify(original));
     expect(roundtripped).toEqual(original);
+  });
+
+  it("normalizes legacy interaction fields", () => {
+    const result = screenDesignSchema.parse({
+      pages: [
+        {
+          id: "p1",
+          interactions: [{ element: "legacy-btn", trigger: "tap", action: "navigate" }],
+        },
+      ],
+    });
+
+    expect(result.pages[0]?.interactions[0]).toEqual({
+      elementId: "legacy-btn",
+      trigger: "tap",
+      actionKind: "navigate",
+      actionCustom: undefined,
+    });
   });
 });

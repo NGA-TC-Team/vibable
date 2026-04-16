@@ -12,8 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateInput } from "@/components/ui/date-input";
 import { DynamicList, StringList } from "@/components/editor/dynamic-list";
 import { SectionHeader } from "@/components/editor/section-header";
+import { SectionGroup } from "@/components/editor/section-group";
 import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type {
@@ -116,7 +118,7 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   return (
-    <div className="space-y-5">
+    <SectionGroup>
       <div className="space-y-2">
         <Label htmlFor="ov-project-name">프로젝트명</Label>
         <Input
@@ -167,7 +169,7 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       <div className="space-y-2">
         <SectionHeader title="비즈니스 목표" tooltip={SECTION_TOOLTIPS["overview.businessGoals"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addGoal}>
+            <Button variant="outline" size="xs" onClick={addGoal}>
               <Plus className="size-3.5" />
               추가
             </Button>
@@ -341,10 +343,10 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
                 onChange={(e) => updateMilestone(i, { milestone: e.target.value })}
                 disabled={disabled}
               />
-              <Input
+              <DateInput
                 placeholder="일정 (예: 2026-Q2)"
                 value={item.date}
-                onChange={(e) => updateMilestone(i, { date: e.target.value })}
+                onChange={(v) => updateMilestone(i, { date: v })}
                 disabled={disabled}
               />
               <Input
@@ -402,6 +404,6 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
           disabled={disabled}
         />
       </div>
-    </div>
+    </SectionGroup>
   );
 }

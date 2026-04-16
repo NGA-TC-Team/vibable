@@ -419,7 +419,7 @@ export function MockupElementView({ element, selected, onSelect }: MockupElement
 
   return (
     <div
-      className={`h-full w-full cursor-pointer ${selected ? "ring-2 ring-primary" : ""}`}
+      className={`relative h-full w-full cursor-pointer ${selected ? "ring-2 ring-primary" : ""}`}
       onClick={(e) => {
         e.stopPropagation();
         onSelect?.();

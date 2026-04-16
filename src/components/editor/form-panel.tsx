@@ -50,7 +50,7 @@ export function FormPanel() {
 
   return (
     <ScrollArea className="h-full">
-      <div ref={containerRef} className="p-4 space-y-4">
+      <div ref={containerRef} data-slot="form-panel" className="px-5 py-6 space-y-4">
         <SectionHeader
           title={PHASE_LABELS[currentPhase]}
           tooltip={SECTION_TOOLTIPS[PHASE_TOOLTIP_KEYS[currentPhase]] ?? ""}

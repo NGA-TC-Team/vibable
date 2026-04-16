@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SectionHeader } from "@/components/editor/section-header";
+import { SectionGroup } from "@/components/editor/section-group";
 import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { Entity, EntityField, DataModelPhase } from "@/types/phases";
@@ -87,11 +88,11 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   return (
-    <div className="space-y-6">
+    <SectionGroup>
       <section className="space-y-3">
         <SectionHeader title="엔티티" tooltip={SECTION_TOOLTIPS["dataModel.entities"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addEntity}>
+            <Button variant="outline" size="xs" onClick={addEntity}>
               <Plus className="size-3.5" />
               엔티티 추가
             </Button>
@@ -112,6 +113,7 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => removeEntity(ei)}
+                  className="hover:border-destructive/40 hover:text-destructive"
                 >
                   <X className="size-3.5" />
                 </Button>
@@ -167,6 +169,7 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
                       variant="ghost"
                       size="icon-xs"
                       onClick={() => removeField(ei, fi)}
+                      className="hover:border-destructive/40 hover:text-destructive"
                     >
                       <X className="size-3.5" />
                     </Button>
@@ -175,7 +178,7 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
               ))}
               {!disabled && (
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="xs"
                   onClick={() => addField(ei)}
                 >
@@ -220,6 +223,6 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
           disabled={disabled}
         />
       </section>
-    </div>
+    </SectionGroup>
   );
 }

@@ -15,11 +15,29 @@ export const typeScaleEntrySchema = z.object({
   letterSpacing: z.string().optional(),
 });
 
+export const componentStyleTokenSchema = z.object({
+  background: z.string().optional(),
+  textColor: z.string().optional(),
+  borderColor: z.string().optional(),
+  borderRadius: z.string().optional(),
+  padding: z.string().optional(),
+  shadow: z.string().optional(),
+  fontSize: z.string().optional(),
+  fontWeight: z.string().optional(),
+});
+
 export const componentStyleSchema = z.object({
   component: z.string().default(""),
+  category: z
+    .enum(["button", "card", "input", "badge", "navigation", "modal", "table", "custom"])
+    .default("custom"),
   variants: z.string().default(""),
   borderRadius: z.string().default(""),
   notes: z.string().optional(),
+  defaultStyle: componentStyleTokenSchema.optional(),
+  hoverStyle: componentStyleTokenSchema.optional(),
+  activeStyle: componentStyleTokenSchema.optional(),
+  disabledStyle: componentStyleTokenSchema.optional(),
 });
 
 export const glossaryEntrySchema = z.object({

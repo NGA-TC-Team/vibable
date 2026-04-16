@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StringList } from "@/components/editor/dynamic-list";
 import { SectionHeader } from "@/components/editor/section-header";
+import { SectionGroup } from "@/components/editor/section-group";
 import { SECTION_TOOLTIPS, MAX_SITEMAP_DEPTH } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { SitemapNode, UserFlow, FlowStep } from "@/types/phases";
@@ -143,7 +144,7 @@ function SitemapNodeEditor({
       ))}
       {!disabled && depth < MAX_SITEMAP_DEPTH - 1 && (
         <Button
-          variant="ghost"
+          variant="outline"
           size="xs"
           className="ml-1 mt-1"
           onClick={() => onAddChild(path)}
@@ -251,7 +252,7 @@ function SortableFlowItem({
       </DndContext>
       {!disabled && (
         <Button
-          variant="ghost"
+          variant="outline"
           size="xs"
           className="ml-4"
           onClick={() => onAddStep(flowIndex)}
@@ -440,12 +441,12 @@ export function InfoArchitectureForm({
   );
 
   return (
-    <div className="space-y-6">
+    <SectionGroup>
       {/* Sitemap — 4뎁스 재귀 */}
       <section className="space-y-3">
         <SectionHeader title="사이트맵" tooltip={SECTION_TOOLTIPS["infoArchitecture.sitemap"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addSitemapNode}>
+            <Button variant="outline" size="xs" onClick={addSitemapNode}>
               <Plus className="size-3.5" />
               노드 추가
             </Button>
@@ -470,7 +471,7 @@ export function InfoArchitectureForm({
       <section className="space-y-3">
         <SectionHeader title="유저 플로우" tooltip={SECTION_TOOLTIPS["infoArchitecture.userFlows"]}>
           {!disabled && (
-            <Button variant="ghost" size="xs" onClick={addFlow}>
+            <Button variant="outline" size="xs" onClick={addFlow}>
               <Plus className="size-3.5" />
               추가
             </Button>
@@ -513,6 +514,6 @@ export function InfoArchitectureForm({
           disabled={disabled}
         />
       </section>
-    </div>
+    </SectionGroup>
   );
 }

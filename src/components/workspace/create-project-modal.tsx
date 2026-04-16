@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, Smartphone, Terminal, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,41 +15,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { PROJECT_TYPES } from "@/lib/project-types";
 import { useCreateProject } from "@/hooks/use-project.hook";
 import type { ProjectType } from "@/types/phases";
 
-const projectTypes: {
-  value: ProjectType;
-  label: string;
-  desc: string;
-  icon: React.ReactNode;
-}[] = [
-  {
-    value: "web",
-    label: "웹",
-    desc: "웹 애플리케이션",
-    icon: <Globe className="size-5" />,
-  },
-  {
-    value: "mobile",
-    label: "모바일",
-    desc: "모바일 앱",
-    icon: <Smartphone className="size-5" />,
-  },
-  {
-    value: "cli",
-    label: "CLI",
-    desc: "커맨드라인 도구",
-    icon: <Terminal className="size-5" />,
-  },
-];
-
 interface CreateProjectModalProps {
   workspaceId: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-export function CreateProjectModal({ workspaceId }: CreateProjectModalProps) {
-  const [open, setOpen] = useState(false);
+export function CreateProjectModal({
+  workspaceId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  trigger,
+}: CreateProjectModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("web");
   const router = useRouter();
@@ -73,14 +58,18 @@ export function CreateProjectModal({ workspaceId }: CreateProjectModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="flex h-full min-h-[180px] cursor-pointer items-center justify-center rounded-4xl border-2 border-dashed border-muted-foreground/25 bg-background transition-colors hover:border-muted-foreground/50 hover:bg-muted/50">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <Plus className="size-8" />
-            <span className="text-sm font-medium">새 프로젝트</span>
-          </div>
-        </button>
-      </DialogTrigger>
+      {trigger !== undefined ? (
+        trigger
+      ) : (
+        <DialogTrigger asChild>
+          <button className="flex h-full min-h-[180px] cursor-pointer items-center justify-center rounded-4xl border-2 border-dashed border-muted-foreground/25 bg-background transition-colors hover:border-muted-foreground/50 hover:bg-muted/50">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <Plus className="size-8" />
+              <span className="text-sm font-medium">새 프로젝트</span>
+            </div>
+          </button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>새 프로젝트 만들기</DialogTitle>
@@ -100,7 +89,7 @@ export function CreateProjectModal({ workspaceId }: CreateProjectModalProps) {
           <div className="space-y-2">
             <Label>프로젝트 유형</Label>
             <div className="grid grid-cols-3 gap-3">
-              {projectTypes.map((pt) => (
+              {PROJECT_TYPES.map((pt) => (
                 <button
                   key={pt.value}
                   type="button"
