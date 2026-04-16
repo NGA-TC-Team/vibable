@@ -15,11 +15,25 @@ export interface SuccessMetric {
   measurement: string;
 }
 
+/** 성공 지표 상·하위 묶음 (카드 1개 = 1그룹) */
+export interface SuccessMetricGroup {
+  id: string;
+  parent: SuccessMetric;
+  children: SuccessMetric[];
+}
+
 export interface Milestone {
   id: string;
   milestone: string;
   date: string;
   description: string;
+}
+
+/** 마일스톤 상·하위 묶음 */
+export interface MilestoneGroup {
+  id: string;
+  parent: Milestone;
+  children: Milestone[];
 }
 
 export interface Reference {
@@ -42,8 +56,12 @@ export interface OverviewPhase {
   };
   competitors: Competitor[];
   constraints: string[];
+  /** 레거시 평면 배열 — 신규 데이터는 비우고 successMetricGroups 사용 */
   successMetrics: SuccessMetric[];
+  successMetricGroups: SuccessMetricGroup[];
+  /** 레거시 평면 배열 — 신규 데이터는 비우고 milestoneGroups 사용 */
   timeline: Milestone[];
+  milestoneGroups: MilestoneGroup[];
   references: Reference[];
   techStack?: string;
 }

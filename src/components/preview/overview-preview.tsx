@@ -10,6 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePhaseData } from "@/hooks/use-phase.hook";
+import {
+  overviewHasSuccessMetricContent,
+  overviewHasTimelineContent,
+} from "@/lib/overview-groups";
 
 function Placeholder({ text }: { text: string }) {
   return (
@@ -149,55 +153,131 @@ export function OverviewPreview() {
         </section>
       )}
 
-      {(data.successMetrics?.length ?? 0) > 0 && (
-        <section className="space-y-2">
+      {overviewHasSuccessMetricContent(data) && (
+        <section className="space-y-3">
           <h2 className="text-base font-semibold text-muted-foreground">
             성공 지표
           </h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>지표</TableHead>
-                <TableHead>목표</TableHead>
-                <TableHead>측정 방법</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.successMetrics!.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.metric}</TableCell>
-                  <TableCell>{m.target}</TableCell>
-                  <TableCell>{m.measurement}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="space-y-3">
+            {(data.successMetricGroups?.length ?? 0) > 0
+              ? data.successMetricGroups!.map((group) => (
+                  <div
+                    key={group.id}
+                    className="overflow-hidden rounded-lg border border-border/80 bg-muted/10"
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>구분</TableHead>
+                          <TableHead>지표</TableHead>
+                          <TableHead>목표</TableHead>
+                          <TableHead>측정 방법</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="w-24 text-muted-foreground">상위</TableCell>
+                          <TableCell className="font-medium">{group.parent.metric}</TableCell>
+                          <TableCell>{group.parent.target}</TableCell>
+                          <TableCell>{group.parent.measurement}</TableCell>
+                        </TableRow>
+                        {group.children.map((m) => (
+                          <TableRow key={m.id}>
+                            <TableCell className="text-muted-foreground">하위</TableCell>
+                            <TableCell className="font-medium">{m.metric}</TableCell>
+                            <TableCell>{m.target}</TableCell>
+                            <TableCell>{m.measurement}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ))
+              : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>지표</TableHead>
+                        <TableHead>목표</TableHead>
+                        <TableHead>측정 방법</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(data.successMetrics ?? []).map((m) => (
+                        <TableRow key={m.id}>
+                          <TableCell className="font-medium">{m.metric}</TableCell>
+                          <TableCell>{m.target}</TableCell>
+                          <TableCell>{m.measurement}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+          </div>
         </section>
       )}
 
-      {(data.timeline?.length ?? 0) > 0 && (
-        <section className="space-y-2">
+      {overviewHasTimelineContent(data) && (
+        <section className="space-y-3">
           <h2 className="text-base font-semibold text-muted-foreground">
             일정
           </h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>마일스톤</TableHead>
-                <TableHead>일정</TableHead>
-                <TableHead>설명</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.timeline!.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.milestone}</TableCell>
-                  <TableCell>{m.date}</TableCell>
-                  <TableCell>{m.description}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="space-y-3">
+            {(data.milestoneGroups?.length ?? 0) > 0
+              ? data.milestoneGroups!.map((group) => (
+                  <div
+                    key={group.id}
+                    className="overflow-hidden rounded-lg border border-border/80 bg-muted/10"
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>구분</TableHead>
+                          <TableHead>마일스톤</TableHead>
+                          <TableHead>일정</TableHead>
+                          <TableHead>설명</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="w-24 text-muted-foreground">상위</TableCell>
+                          <TableCell className="font-medium">{group.parent.milestone}</TableCell>
+                          <TableCell>{group.parent.date}</TableCell>
+                          <TableCell>{group.parent.description}</TableCell>
+                        </TableRow>
+                        {group.children.map((m) => (
+                          <TableRow key={m.id}>
+                            <TableCell className="text-muted-foreground">하위</TableCell>
+                            <TableCell className="font-medium">{m.milestone}</TableCell>
+                            <TableCell>{m.date}</TableCell>
+                            <TableCell>{m.description}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ))
+              : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>마일스톤</TableHead>
+                        <TableHead>일정</TableHead>
+                        <TableHead>설명</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(data.timeline ?? []).map((m) => (
+                        <TableRow key={m.id}>
+                          <TableCell className="font-medium">{m.milestone}</TableCell>
+                          <TableCell>{m.date}</TableCell>
+                          <TableCell>{m.description}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+          </div>
         </section>
       )}
 

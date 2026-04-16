@@ -10,6 +10,10 @@ import {
   View,
 } from "@react-pdf/renderer";
 import {
+  flattenOverviewSuccessMetrics,
+  flattenOverviewTimeline,
+} from "@/lib/overview-groups";
+import {
   AGENT_PHASE_LABELS,
   PHASE_LABELS,
   type Persona,
@@ -192,6 +196,8 @@ function CoverPage({ project }: { project: Project }) {
 
 function OverviewPage({ project }: { project: Project }) {
   const d = project.phases.overview;
+  const successMetricRows = flattenOverviewSuccessMetrics(d);
+  const timelineRows = flattenOverviewTimeline(d);
   const SCOPE_LABELS: Record<string, string> = { mvp: "MVP", full: "Full", prototype: "Prototype" };
   return (
     <Page size="A4" orientation="landscape" style={s.page} wrap>
@@ -254,7 +260,7 @@ function OverviewPage({ project }: { project: Project }) {
           ))}
         </>
       )}
-      {(d.successMetrics?.length ?? 0) > 0 && (
+      {successMetricRows.length > 0 && (
         <>
           <Text style={s.subTitle} minPresenceAhead={40}>성공 지표</Text>
           <View style={s.table}>
@@ -263,7 +269,7 @@ function OverviewPage({ project }: { project: Project }) {
               <Text style={s.tableCellBold}>목표</Text>
               <Text style={s.tableCellBold}>측정 방법</Text>
             </View>
-            {d.successMetrics!.map((m) => (
+            {successMetricRows.map((m) => (
               <View key={m.id} style={s.tableRow} wrap={false}>
                 <Text style={s.tableCell}>{m.metric}</Text>
                 <Text style={s.tableCell}>{m.target}</Text>
@@ -273,7 +279,7 @@ function OverviewPage({ project }: { project: Project }) {
           </View>
         </>
       )}
-      {(d.timeline?.length ?? 0) > 0 && (
+      {timelineRows.length > 0 && (
         <>
           <Text style={s.subTitle} minPresenceAhead={40}>일정</Text>
           <View style={s.table}>
@@ -282,7 +288,7 @@ function OverviewPage({ project }: { project: Project }) {
               <Text style={s.tableCellBold}>일정</Text>
               <Text style={s.tableCellBold}>설명</Text>
             </View>
-            {d.timeline!.map((m) => (
+            {timelineRows.map((m) => (
               <View key={m.id} style={s.tableRow} wrap={false}>
                 <Text style={s.tableCell}>{m.milestone}</Text>
                 <Text style={s.tableCell}>{m.date}</Text>

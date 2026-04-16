@@ -140,7 +140,7 @@ export function EditProjectModal({
           </div>
           <div className="space-y-2">
             <Label>프로젝트 유형</Label>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3">
               {PROJECT_TYPES.map((pt) => (
                 <button
                   key={pt.value}

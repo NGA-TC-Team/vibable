@@ -13,7 +13,8 @@ import { DEFAULT_WORKSPACE_ID } from "@/lib/db";
 import { useEditorStore } from "@/services/store/editor-store";
 import { EditorLayout } from "@/components/editor/editor-layout";
 import { toast } from "sonner";
-import type { Project } from "@/types/phases";
+import type { PhaseData, Project } from "@/types/phases";
+import { phaseDataSchema } from "@/lib/schemas/phase-data";
 
 type ViewMode = "choose" | "readonly";
 
@@ -94,7 +95,7 @@ export function SharedClient() {
   };
 
   const handleReadOnly = () => {
-    setPhaseData(parsed.phases);
+    setPhaseData(phaseDataSchema.parse(parsed.phases) as PhaseData);
     setProjectType(parsed.type);
     setAgentSubType(parsed.agentSubType ?? null);
     setReadOnly(true);

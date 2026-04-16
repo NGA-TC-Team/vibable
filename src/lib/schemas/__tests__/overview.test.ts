@@ -16,7 +16,9 @@ describe("overviewSchema", () => {
       competitors: [],
       constraints: [],
       successMetrics: [],
+      successMetricGroups: [],
       timeline: [],
+      milestoneGroups: [],
       references: [],
       techStack: "",
     });
@@ -54,5 +56,31 @@ describe("overviewSchema", () => {
     const roundtripped = JSON.parse(JSON.stringify(original));
 
     expect(roundtripped).toEqual(original);
+  });
+
+  it("migrates legacy flat successMetrics into groups (one row per group)", () => {
+    const result = overviewSchema.parse({
+      successMetrics: [
+        { id: "a", metric: "MAU", target: "1k", measurement: "analytics" },
+        { id: "b", metric: "NPS", target: "40", measurement: "survey" },
+      ],
+    });
+
+    expect(result.successMetrics).toEqual([]);
+    expect(result.successMetricGroups).toHaveLength(2);
+    expect(result.successMetricGroups[0].id).toBe("grp-a");
+    expect(result.successMetricGroups[0].parent.metric).toBe("MAU");
+    expect(result.successMetricGroups[0].children).toEqual([]);
+    expect(result.successMetricGroups[1].parent.id).toBe("b");
+  });
+
+  it("migrates legacy flat timeline into milestoneGroups", () => {
+    const result = overviewSchema.parse({
+      timeline: [{ id: "m1", milestone: "MVP", date: "Q2", description: "ship" }],
+    });
+
+    expect(result.timeline).toEqual([]);
+    expect(result.milestoneGroups).toHaveLength(1);
+    expect(result.milestoneGroups[0].parent.milestone).toBe("MVP");
   });
 });

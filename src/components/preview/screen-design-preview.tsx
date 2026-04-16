@@ -244,7 +244,8 @@ function ScreenWorkspace({
   onNavigateToPage: (pageId: string) => void;
   onRemoveElements: (ids: string[]) => void;
 }) {
-  const { page, viewport, setViewport, setElements, addElementToAll } = useMockup(pageId);
+  const { page, elements, viewport, setViewport, setElements, addElementToAll } =
+    useMockup(pageId);
 
   if (!page) return null;
 
@@ -254,6 +255,7 @@ function ScreenWorkspace({
       <div className="relative z-10 h-full">
         <MockupCanvas
           page={page}
+          elements={elements}
           projectType={projectType}
           viewport={viewport}
           inLinks={inLinks}

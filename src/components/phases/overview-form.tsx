@@ -38,6 +38,8 @@ import type {
   Milestone,
   Reference,
   OverviewPhase,
+  SuccessMetricGroup,
+  MilestoneGroup,
 } from "@/types/phases";
 
 const scopeLabels = {
@@ -86,34 +88,137 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
     patchData({ competitors: (data.competitors ?? []).filter((_, i) => i !== index) });
   };
 
-  const addMetric = () => {
-    const item: SuccessMetric = { id: crypto.randomUUID(), metric: "", target: "", measurement: "" };
-    patchData({ successMetrics: [...(data.successMetrics ?? []), item] });
+  const emptySuccessMetric = (): SuccessMetric => ({
+    id: crypto.randomUUID(),
+    metric: "",
+    target: "",
+    measurement: "",
+  });
+
+  const emptyMilestone = (): Milestone => ({
+    id: crypto.randomUUID(),
+    milestone: "",
+    date: "",
+    description: "",
+  });
+
+  const addSuccessMetricGroup = () => {
+    const group: SuccessMetricGroup = {
+      id: crypto.randomUUID(),
+      parent: emptySuccessMetric(),
+      children: [],
+    };
+    patchData({
+      successMetricGroups: [group, ...(data.successMetricGroups ?? [])],
+      successMetrics: [],
+    });
   };
 
-  const updateMetric = (index: number, patch: Partial<SuccessMetric>) => {
-    const items = [...(data.successMetrics ?? [])];
-    items[index] = { ...items[index], ...patch };
-    patchData({ successMetrics: items });
+  const removeSuccessMetricGroup = (groupIndex: number) => {
+    patchData({
+      successMetricGroups: (data.successMetricGroups ?? []).filter((_, i) => i !== groupIndex),
+    });
   };
 
-  const removeMetric = (index: number) => {
-    patchData({ successMetrics: (data.successMetrics ?? []).filter((_, i) => i !== index) });
+  const updateSuccessMetricParent = (
+    groupIndex: number,
+    patch: Partial<SuccessMetric>,
+  ) => {
+    const groups = [...(data.successMetricGroups ?? [])];
+    groups[groupIndex] = {
+      ...groups[groupIndex],
+      parent: { ...groups[groupIndex].parent, ...patch },
+    };
+    patchData({ successMetricGroups: groups, successMetrics: [] });
   };
 
-  const addMilestone = () => {
-    const item: Milestone = { id: crypto.randomUUID(), milestone: "", date: "", description: "" };
-    patchData({ timeline: [...(data.timeline ?? []), item] });
+  const addSuccessMetricChild = (groupIndex: number) => {
+    const groups = [...(data.successMetricGroups ?? [])];
+    const g = groups[groupIndex];
+    groups[groupIndex] = {
+      ...g,
+      children: [emptySuccessMetric(), ...g.children],
+    };
+    patchData({ successMetricGroups: groups, successMetrics: [] });
   };
 
-  const updateMilestone = (index: number, patch: Partial<Milestone>) => {
-    const items = [...(data.timeline ?? [])];
-    items[index] = { ...items[index], ...patch };
-    patchData({ timeline: items });
+  const updateSuccessMetricChild = (
+    groupIndex: number,
+    childIndex: number,
+    patch: Partial<SuccessMetric>,
+  ) => {
+    const groups = [...(data.successMetricGroups ?? [])];
+    const children = [...groups[groupIndex].children];
+    children[childIndex] = { ...children[childIndex], ...patch };
+    groups[groupIndex] = { ...groups[groupIndex], children };
+    patchData({ successMetricGroups: groups, successMetrics: [] });
   };
 
-  const removeMilestone = (index: number) => {
-    patchData({ timeline: (data.timeline ?? []).filter((_, i) => i !== index) });
+  const removeSuccessMetricChild = (groupIndex: number, childIndex: number) => {
+    const groups = [...(data.successMetricGroups ?? [])];
+    groups[groupIndex] = {
+      ...groups[groupIndex],
+      children: groups[groupIndex].children.filter((_, i) => i !== childIndex),
+    };
+    patchData({ successMetricGroups: groups, successMetrics: [] });
+  };
+
+  const addMilestoneGroup = () => {
+    const group: MilestoneGroup = {
+      id: crypto.randomUUID(),
+      parent: emptyMilestone(),
+      children: [],
+    };
+    patchData({
+      milestoneGroups: [group, ...(data.milestoneGroups ?? [])],
+      timeline: [],
+    });
+  };
+
+  const removeMilestoneGroup = (groupIndex: number) => {
+    patchData({
+      milestoneGroups: (data.milestoneGroups ?? []).filter((_, i) => i !== groupIndex),
+    });
+  };
+
+  const updateMilestoneParent = (groupIndex: number, patch: Partial<Milestone>) => {
+    const groups = [...(data.milestoneGroups ?? [])];
+    groups[groupIndex] = {
+      ...groups[groupIndex],
+      parent: { ...groups[groupIndex].parent, ...patch },
+    };
+    patchData({ milestoneGroups: groups, timeline: [] });
+  };
+
+  const addMilestoneChild = (groupIndex: number) => {
+    const groups = [...(data.milestoneGroups ?? [])];
+    const g = groups[groupIndex];
+    groups[groupIndex] = {
+      ...g,
+      children: [emptyMilestone(), ...g.children],
+    };
+    patchData({ milestoneGroups: groups, timeline: [] });
+  };
+
+  const updateMilestoneChild = (
+    groupIndex: number,
+    childIndex: number,
+    patch: Partial<Milestone>,
+  ) => {
+    const groups = [...(data.milestoneGroups ?? [])];
+    const children = [...groups[groupIndex].children];
+    children[childIndex] = { ...children[childIndex], ...patch };
+    groups[groupIndex] = { ...groups[groupIndex], children };
+    patchData({ milestoneGroups: groups, timeline: [] });
+  };
+
+  const removeMilestoneChild = (groupIndex: number, childIndex: number) => {
+    const groups = [...(data.milestoneGroups ?? [])];
+    groups[groupIndex] = {
+      ...groups[groupIndex],
+      children: groups[groupIndex].children.filter((_, i) => i !== childIndex),
+    };
+    patchData({ milestoneGroups: groups, timeline: [] });
   };
 
   const addReference = () => {
@@ -304,6 +409,7 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
           items={data.competitors ?? []}
           onAdd={addCompetitor}
           onRemove={removeCompetitor}
+          renderKey={(item) => item.id}
           addLabel="경쟁사 추가"
           emptyMessage="경쟁사를 추가하세요"
           disabled={disabled}
@@ -356,81 +462,263 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <FieldLabel
-          icon={BarChart3}
-          tooltip="프로젝트가 잘 되고 있는지 판단할 지표와 목표값을 정의합니다."
-        >
-          성공 지표
-        </FieldLabel>
-        <DynamicList
-          items={data.successMetrics ?? []}
-          onAdd={addMetric}
-          onRemove={removeMetric}
-          addLabel="지표 추가"
-          emptyMessage="성공 지표를 추가하세요"
-          disabled={disabled}
-          renderItem={(item, i) => (
-            <div className="grid grid-cols-3 gap-2">
-              <Input
-                placeholder="지표명"
-                value={item.metric}
-                onChange={(e) => updateMetric(i, { metric: e.target.value })}
-                disabled={disabled}
-              />
-              <Input
-                placeholder="목표값"
-                value={item.target}
-                onChange={(e) => updateMetric(i, { target: e.target.value })}
-                disabled={disabled}
-              />
-              <Input
-                placeholder="측정 방법"
-                value={item.measurement}
-                onChange={(e) => updateMetric(i, { measurement: e.target.value })}
-                disabled={disabled}
-              />
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <FieldLabel
+            icon={BarChart3}
+            tooltip="프로젝트가 잘 되고 있는지 판단할 지표와 목표값을 정의합니다. 그룹마다 상위 지표와 하위 지표를 묶어 순서를 관리합니다."
+            className="mb-0"
+          >
+            성공 지표
+          </FieldLabel>
+          {!disabled && (
+            <Button variant="outline" size="xs" onClick={addSuccessMetricGroup}>
+              <Plus className="size-3.5" />
+              지표 그룹 추가
+            </Button>
           )}
-        />
+        </div>
+        {(data.successMetricGroups ?? []).length === 0 && (
+          <p className="text-sm text-muted-foreground">지표 그룹을 추가하세요</p>
+        )}
+        <AnimatedList className="space-y-3">
+          {(data.successMetricGroups ?? []).map((group, gi) => (
+            <AnimatedListItem key={group.id}>
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-3 shadow-sm space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    지표 묶음
+                  </span>
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => removeSuccessMetricGroup(gi)}
+                    >
+                      그룹 삭제
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">상위 지표</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      placeholder="지표명"
+                      value={group.parent.metric}
+                      onChange={(e) =>
+                        updateSuccessMetricParent(gi, { metric: e.target.value })
+                      }
+                      disabled={disabled}
+                    />
+                    <Input
+                      placeholder="목표값"
+                      value={group.parent.target}
+                      onChange={(e) =>
+                        updateSuccessMetricParent(gi, { target: e.target.value })
+                      }
+                      disabled={disabled}
+                    />
+                    <Input
+                      placeholder="측정 방법"
+                      value={group.parent.measurement}
+                      onChange={(e) =>
+                        updateSuccessMetricParent(gi, { measurement: e.target.value })
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 border-t border-border/60 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      하위 지표
+                    </p>
+                    {!disabled && (
+                      <Button variant="outline" size="xs" onClick={() => addSuccessMetricChild(gi)}>
+                        <Plus className="size-3.5" />
+                        하위 지표 추가
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2 border-l-2 border-primary/25 pl-3">
+                    {group.children.length === 0 && (
+                      <p className="text-xs text-muted-foreground">하위 지표가 없습니다</p>
+                    )}
+                    {group.children.map((child, ci) => (
+                      <div key={child.id} className="flex items-center gap-2">
+                        <div className="grid flex-1 grid-cols-3 gap-2">
+                          <Input
+                            placeholder="지표명"
+                            value={child.metric}
+                            onChange={(e) =>
+                              updateSuccessMetricChild(gi, ci, { metric: e.target.value })
+                            }
+                            disabled={disabled}
+                          />
+                          <Input
+                            placeholder="목표값"
+                            value={child.target}
+                            onChange={(e) =>
+                              updateSuccessMetricChild(gi, ci, { target: e.target.value })
+                            }
+                            disabled={disabled}
+                          />
+                          <Input
+                            placeholder="측정 방법"
+                            value={child.measurement}
+                            onChange={(e) =>
+                              updateSuccessMetricChild(gi, ci, {
+                                measurement: e.target.value,
+                              })
+                            }
+                            disabled={disabled}
+                          />
+                        </div>
+                        {!disabled && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => removeSuccessMetricChild(gi, ci)}
+                            className="shrink-0 hover:border-destructive/40 hover:text-destructive"
+                          >
+                            <X className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </div>
 
       <div className="space-y-2">
-        <FieldLabel
-          icon={Calendar}
-          tooltip="주요 마일스톤과 예상 시점을 정리해 전체 일정 감각을 맞춥니다."
-        >
-          일정 (마일스톤)
-        </FieldLabel>
-        <DynamicList
-          items={data.timeline ?? []}
-          onAdd={addMilestone}
-          onRemove={removeMilestone}
-          addLabel="마일스톤 추가"
-          emptyMessage="마일스톤을 추가하세요"
-          disabled={disabled}
-          renderItem={(item, i) => (
-            <div className="grid grid-cols-3 gap-2">
-              <Input
-                placeholder="마일스톤"
-                value={item.milestone}
-                onChange={(e) => updateMilestone(i, { milestone: e.target.value })}
-                disabled={disabled}
-              />
-              <DateInput
-                placeholder="일정 (예: 2026-Q2)"
-                value={item.date}
-                onChange={(v) => updateMilestone(i, { date: v })}
-                disabled={disabled}
-              />
-              <Input
-                placeholder="설명"
-                value={item.description}
-                onChange={(e) => updateMilestone(i, { description: e.target.value })}
-                disabled={disabled}
-              />
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <FieldLabel
+            icon={Calendar}
+            tooltip="주요 마일스톤과 예상 시점을 정리해 전체 일정 감각을 맞춥니다. 그룹마다 상위 일정과 하위 일정을 묶습니다."
+            className="mb-0"
+          >
+            일정 (마일스톤)
+          </FieldLabel>
+          {!disabled && (
+            <Button variant="outline" size="xs" onClick={addMilestoneGroup}>
+              <Plus className="size-3.5" />
+              마일스톤 그룹 추가
+            </Button>
           )}
-        />
+        </div>
+        {(data.milestoneGroups ?? []).length === 0 && (
+          <p className="text-sm text-muted-foreground">마일스톤 그룹을 추가하세요</p>
+        )}
+        <AnimatedList className="space-y-3">
+          {(data.milestoneGroups ?? []).map((group, gi) => (
+            <AnimatedListItem key={group.id}>
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-3 shadow-sm space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    일정 묶음
+                  </span>
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => removeMilestoneGroup(gi)}
+                    >
+                      그룹 삭제
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">상위 마일스톤</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      placeholder="마일스톤"
+                      value={group.parent.milestone}
+                      onChange={(e) =>
+                        updateMilestoneParent(gi, { milestone: e.target.value })
+                      }
+                      disabled={disabled}
+                    />
+                    <DateInput
+                      placeholder="일정 (예: 2026-Q2)"
+                      value={group.parent.date}
+                      onChange={(v) => updateMilestoneParent(gi, { date: v })}
+                      disabled={disabled}
+                    />
+                    <Input
+                      placeholder="설명"
+                      value={group.parent.description}
+                      onChange={(e) =>
+                        updateMilestoneParent(gi, { description: e.target.value })
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 border-t border-border/60 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      하위 마일스톤
+                    </p>
+                    {!disabled && (
+                      <Button variant="outline" size="xs" onClick={() => addMilestoneChild(gi)}>
+                        <Plus className="size-3.5" />
+                        하위 마일스톤 추가
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2 border-l-2 border-primary/25 pl-3">
+                    {group.children.length === 0 && (
+                      <p className="text-xs text-muted-foreground">하위 마일스톤이 없습니다</p>
+                    )}
+                    {group.children.map((child, ci) => (
+                      <div key={child.id} className="flex items-center gap-2">
+                        <div className="grid flex-1 grid-cols-3 gap-2">
+                          <Input
+                            placeholder="마일스톤"
+                            value={child.milestone}
+                            onChange={(e) =>
+                              updateMilestoneChild(gi, ci, { milestone: e.target.value })
+                            }
+                            disabled={disabled}
+                          />
+                          <DateInput
+                            placeholder="일정 (예: 2026-Q2)"
+                            value={child.date}
+                            onChange={(v) => updateMilestoneChild(gi, ci, { date: v })}
+                            disabled={disabled}
+                          />
+                          <Input
+                            placeholder="설명"
+                            value={child.description}
+                            onChange={(e) =>
+                              updateMilestoneChild(gi, ci, { description: e.target.value })
+                            }
+                            disabled={disabled}
+                          />
+                        </div>
+                        {!disabled && (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => removeMilestoneChild(gi, ci)}
+                            className="shrink-0 hover:border-destructive/40 hover:text-destructive"
+                          >
+                            <X className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </div>
 
       <div className="space-y-2">
@@ -444,6 +732,7 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
           items={data.references ?? []}
           onAdd={addReference}
           onRemove={removeReference}
+          renderKey={(item) => item.id}
           addLabel="참고 자료 추가"
           emptyMessage="참고 자료를 추가하세요"
           disabled={disabled}

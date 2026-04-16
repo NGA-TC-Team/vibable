@@ -10,6 +10,8 @@ import { EditorLayout } from "@/components/editor/editor-layout";
 import { useProject } from "@/hooks/use-project.hook";
 import { useAutoSave } from "@/hooks/use-auto-save.hook";
 import { useEditorStore } from "@/services/store/editor-store";
+import { phaseDataSchema } from "@/lib/schemas/phase-data";
+import type { PhaseData } from "@/types/phases";
 
 interface EditorClientProps {
   projectId: string;
@@ -32,7 +34,7 @@ export function EditorClient({ projectId }: EditorClientProps) {
 
   useEffect(() => {
     if (project) {
-      setPhaseData(project.phases);
+      setPhaseData(phaseDataSchema.parse(project.phases) as PhaseData);
       setProjectType(project.type);
       setAgentSubType(project.agentSubType ?? null);
       setPhase(phase);

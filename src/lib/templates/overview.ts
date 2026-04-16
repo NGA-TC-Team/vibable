@@ -16,8 +16,32 @@ const ideaBrainstormExample = {
   scope: { type: "mvp", details: "핵심 타이머 + 회고 리포트. 소셜 기능은 2차 스코프." },
   competitors: [],
   constraints: ["MVP 개발 기간 4주 이내"],
-  successMetrics: [{ id: "sm-1", metric: "주간 활성 사용자", target: "3,000명", measurement: "WAU 트래킹" }],
-  timeline: [{ id: "ms-1", milestone: "MVP 출시", date: "2026-Q2", description: "핵심 타이머 + 회고 기능" }],
+  successMetrics: [],
+  successMetricGroups: [
+    {
+      id: "smg-1",
+      parent: {
+        id: "sm-1",
+        metric: "주간 활성 사용자",
+        target: "3,000명",
+        measurement: "WAU 트래킹",
+      },
+      children: [],
+    },
+  ],
+  timeline: [],
+  milestoneGroups: [
+    {
+      id: "msg-1",
+      parent: {
+        id: "ms-1",
+        milestone: "MVP 출시",
+        date: "2026-Q2",
+        description: "핵심 타이머 + 회고 기능",
+      },
+      children: [],
+    },
+  ],
   references: [],
   techStack: "Next.js, Supabase, Web Push",
 };
@@ -41,7 +65,9 @@ const competitorAnalysisExample = {
   ],
   constraints: [],
   successMetrics: [],
+  successMetricGroups: [],
   timeline: [],
+  milestoneGroups: [],
   references: [],
   techStack: "React Native, Firebase, OpenAI API",
 };
@@ -61,8 +87,21 @@ const problemDefinitionExample = {
   scope: { type: "mvp", details: "주문/결제 + 가게 등록. 배달 연동은 2차." },
   competitors: [],
   constraints: ["Toss Payments 연동 필수"],
-  successMetrics: [{ id: "sm-1", metric: "월 거래액", target: "1억원", measurement: "결제 데이터 집계" }],
+  successMetrics: [],
+  successMetricGroups: [
+    {
+      id: "smg-1",
+      parent: {
+        id: "sm-1",
+        metric: "월 거래액",
+        target: "1억원",
+        measurement: "결제 데이터 집계",
+      },
+      children: [],
+    },
+  ],
   timeline: [],
+  milestoneGroups: [],
   references: [],
   techStack: "Next.js, Supabase, Toss Payments",
 };

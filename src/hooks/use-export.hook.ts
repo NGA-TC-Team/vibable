@@ -9,15 +9,14 @@ import {
 } from "@/components/export/phase-md-generator";
 import { APP_VERSION, SCHEMA_VERSION } from "@/lib/constants";
 import type { Project } from "@/types/phases";
-import { downloadBlob } from "@/lib/download";
+import { downloadBlob, exportFilenameTimestamp } from "@/lib/download";
+import { runPdfExportWithProgressToast } from "@/components/export/pdf-export-progress-toast";
 import { buildClaudeAgentZipEntries } from "@/components/export/claude-agent-generator";
 import { buildOpenClawWorkspaceFiles } from "@/components/export/openclaw-workspace-generator";
 import { zipStringFiles } from "@/lib/agent-zip";
 import type { ExportJsonPhaseScope } from "@/lib/export-phase-scope";
 
-export function timestamp() {
-  return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-}
+export const timestamp = exportFilenameTimestamp;
 
 export function useExport() {
   const exportJson = (project: Project, scope: "full" | ExportJsonPhaseScope = "full") => {
@@ -58,19 +57,8 @@ export function useExport() {
     toast.success("DESIGN.md 파일이 다운로드되었습니다");
   };
 
-  const exportPdf = async (project: Project) => {
-    try {
-      toast.info("PDF 생성 중...");
-      const { generatePdfBlob } = await import(
-        "@/components/export/pdf-document"
-      );
-      const blob = await generatePdfBlob(project);
-      downloadBlob(blob, `${project.name}_${timestamp()}.pdf`);
-      toast.success("PDF 파일이 다운로드되었습니다");
-    } catch (err) {
-      console.error("PDF export failed:", err);
-      toast.error("PDF 생성에 실패했습니다");
-    }
+  const exportPdf = (project: Project) => {
+    runPdfExportWithProgressToast(project);
   };
 
   const exportAgentZip = (project: Project) => {

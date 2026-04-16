@@ -2,6 +2,10 @@
 
 import { generateDesignMd } from "@/components/export/design-md-generator";
 import {
+  flattenOverviewSuccessMetrics,
+  flattenOverviewTimeline,
+} from "@/lib/overview-groups";
+import {
   AGENT_PHASE_KEYS,
   AGENT_PHASE_LABELS,
   PHASE_LABELS,
@@ -163,26 +167,30 @@ export function generatePhaseMarkdown(
             )
           : ["- 없음"],
       );
-      pushSection(
-        lines,
-        "성공지표",
-        overview.successMetrics.length > 0
-          ? overview.successMetrics.map(
-              (item) =>
-                `- ${item.metric}: 목표 ${item.target || "없음"} / 측정 ${item.measurement || "없음"}`,
-            )
-          : ["- 없음"],
-      );
-      pushSection(
-        lines,
-        "타임라인",
-        overview.timeline.length > 0
-          ? overview.timeline.map(
-              (item) =>
-                `- ${item.milestone}: ${item.date || "미정"} / ${item.description || "설명 없음"}`,
-            )
-          : ["- 없음"],
-      );
+      {
+        const metrics = flattenOverviewSuccessMetrics(overview);
+        const milestones = flattenOverviewTimeline(overview);
+        pushSection(
+          lines,
+          "성공지표",
+          metrics.length > 0
+            ? metrics.map(
+                (item) =>
+                  `- ${item.metric}: 목표 ${item.target || "없음"} / 측정 ${item.measurement || "없음"}`,
+              )
+            : ["- 없음"],
+        );
+        pushSection(
+          lines,
+          "타임라인",
+          milestones.length > 0
+            ? milestones.map(
+                (item) =>
+                  `- ${item.milestone}: ${item.date || "미정"} / ${item.description || "설명 없음"}`,
+              )
+            : ["- 없음"],
+        );
+      }
       pushSection(
         lines,
         "참고 자료",

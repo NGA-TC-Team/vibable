@@ -34,6 +34,8 @@ import type { MockupElement, MockupElementType, ProjectType, ScreenPage, ScreenS
 
 interface MockupCanvasProps {
   page: ScreenPage;
+  /** Normalized mockup list (same pipeline as `useMockup().elements`). */
+  elements: MockupElement[];
   projectType: ProjectType;
   viewport: Viewport;
   inLinks?: LinkedScreenOption[];
@@ -142,6 +144,7 @@ const FULL_BLEED_TYPES = new Set<MockupElementType>(["header", "bottomNav"]);
 
 export function MockupCanvas({
   page,
+  elements,
   projectType,
   viewport,
   inLinks = [],
@@ -160,12 +163,6 @@ export function MockupCanvas({
   const toggleSelectedId = useEditorStore((s) => s.toggleSelectedMockupElementId);
   const clearSelectedIds = useEditorStore((s) => s.clearSelectedMockupElements);
 
-  const elements = useMemo(() => {
-    const byState = page.mockupByState?.[activeScreenState]?.[viewport];
-    if (byState) return byState;
-    if (activeScreenState === "idle") return page.mockup?.[viewport] ?? [];
-    return [];
-  }, [page.mockup, page.mockupByState, activeScreenState, viewport]);
   const topLevelElements = useMemo(() => getTopLevelElements(elements), [elements]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
