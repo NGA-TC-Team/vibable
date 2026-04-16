@@ -139,6 +139,9 @@ function CoverPage({ project }: { project: Project }) {
   return (
     <Page size="A4" orientation="landscape" style={s.coverPage}>
       <Text style={s.coverTitle}>{project.name}</Text>
+      {project.phases.overview.elevatorPitch && (
+        <Text style={[s.coverSub, { marginBottom: 12 }]}>{project.phases.overview.elevatorPitch}</Text>
+      )}
       <Text style={s.coverSub}>{TYPE_LABELS[project.type] ?? project.type} 기획서</Text>
       <Text style={s.coverMeta}>
         생성일: {new Date(project.createdAt).toLocaleDateString("ko-KR")}
@@ -153,14 +156,27 @@ function CoverPage({ project }: { project: Project }) {
 
 function OverviewPage({ project }: { project: Project }) {
   const d = project.phases.overview;
+  const SCOPE_LABELS: Record<string, string> = { mvp: "MVP", full: "Full", prototype: "Prototype" };
   return (
-    <Page size="A4" orientation="landscape" style={s.page}>
+    <Page size="A4" orientation="landscape" style={s.page} wrap>
       <PageHeader projectName={project.name} phaseName={PHASE_LABELS[0]} />
       <Text style={s.sectionTitle}>기획 개요</Text>
       <Text style={s.subTitle}>프로젝트명</Text>
       <Text style={s.paragraph}>{d.projectName || "-"}</Text>
+      {d.elevatorPitch && (
+        <>
+          <Text style={s.subTitle}>한줄 소개</Text>
+          <Text style={s.paragraph}>{d.elevatorPitch}</Text>
+        </>
+      )}
       <Text style={s.subTitle}>개발 배경</Text>
       <Text style={s.paragraph}>{d.background || "-"}</Text>
+      {d.coreValueProposition && (
+        <>
+          <Text style={s.subTitle}>핵심 가치 제안</Text>
+          <Text style={s.paragraph}>{d.coreValueProposition}</Text>
+        </>
+      )}
       <Text style={s.subTitle}>비즈니스 목표</Text>
       {d.businessGoals.filter(Boolean).map((g, i) => (
         <Text key={i} style={s.listItem}>• {g}</Text>
@@ -168,6 +184,86 @@ function OverviewPage({ project }: { project: Project }) {
       {d.businessGoals.filter(Boolean).length === 0 && <Text style={s.paragraph}>-</Text>}
       <Text style={s.subTitle}>타깃 유저</Text>
       <Text style={s.paragraph}>{d.targetUsers || "-"}</Text>
+      {d.scope?.details && (
+        <>
+          <Text style={s.subTitle}>프로젝트 범위</Text>
+          <Text style={s.badge}>{SCOPE_LABELS[d.scope.type] ?? d.scope.type}</Text>
+          <Text style={s.paragraph}>{d.scope.details}</Text>
+        </>
+      )}
+      {(d.competitors?.length ?? 0) > 0 && (
+        <>
+          <Text style={s.subTitle}>경쟁사 / 대안</Text>
+          <View style={s.table}>
+            <View style={s.tableHeader}>
+              <Text style={s.tableCellBold}>서비스명</Text>
+              <Text style={s.tableCellBold}>강점</Text>
+              <Text style={s.tableCellBold}>약점</Text>
+            </View>
+            {d.competitors!.map((c) => (
+              <View key={c.id} style={s.tableRow}>
+                <Text style={s.tableCell}>{c.name}</Text>
+                <Text style={s.tableCell}>{c.strength}</Text>
+                <Text style={s.tableCell}>{c.weakness}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+      {(d.constraints?.length ?? 0) > 0 && (
+        <>
+          <Text style={s.subTitle}>제약사항</Text>
+          {d.constraints!.filter(Boolean).map((c, i) => (
+            <Text key={i} style={s.listItem}>• {c}</Text>
+          ))}
+        </>
+      )}
+      {(d.successMetrics?.length ?? 0) > 0 && (
+        <>
+          <Text style={s.subTitle}>성공 지표</Text>
+          <View style={s.table}>
+            <View style={s.tableHeader}>
+              <Text style={s.tableCellBold}>지표</Text>
+              <Text style={s.tableCellBold}>목표</Text>
+              <Text style={s.tableCellBold}>측정 방법</Text>
+            </View>
+            {d.successMetrics!.map((m) => (
+              <View key={m.id} style={s.tableRow}>
+                <Text style={s.tableCell}>{m.metric}</Text>
+                <Text style={s.tableCell}>{m.target}</Text>
+                <Text style={s.tableCell}>{m.measurement}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+      {(d.timeline?.length ?? 0) > 0 && (
+        <>
+          <Text style={s.subTitle}>일정</Text>
+          <View style={s.table}>
+            <View style={s.tableHeader}>
+              <Text style={s.tableCellBold}>마일스톤</Text>
+              <Text style={s.tableCellBold}>일정</Text>
+              <Text style={s.tableCellBold}>설명</Text>
+            </View>
+            {d.timeline!.map((m) => (
+              <View key={m.id} style={s.tableRow}>
+                <Text style={s.tableCell}>{m.milestone}</Text>
+                <Text style={s.tableCell}>{m.date}</Text>
+                <Text style={s.tableCell}>{m.description}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+      {(d.references?.length ?? 0) > 0 && (
+        <>
+          <Text style={s.subTitle}>참고 자료</Text>
+          {d.references!.map((r) => (
+            <Text key={r.id} style={s.listItem}>• {r.title}{r.notes ? ` — ${r.notes}` : ""}</Text>
+          ))}
+        </>
+      )}
       {d.techStack && (
         <>
           <Text style={s.subTitle}>기술 스택</Text>

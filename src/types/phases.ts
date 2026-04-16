@@ -1,10 +1,50 @@
 // ─── Phase 0: 기획 개요 ───
 
+export interface Competitor {
+  id: string;
+  name: string;
+  url?: string;
+  strength: string;
+  weakness: string;
+}
+
+export interface SuccessMetric {
+  id: string;
+  metric: string;
+  target: string;
+  measurement: string;
+}
+
+export interface Milestone {
+  id: string;
+  milestone: string;
+  date: string;
+  description: string;
+}
+
+export interface Reference {
+  id: string;
+  title: string;
+  url?: string;
+  notes?: string;
+}
+
 export interface OverviewPhase {
   projectName: string;
+  elevatorPitch: string;
   background: string;
+  coreValueProposition: string;
   businessGoals: string[];
   targetUsers: string;
+  scope: {
+    type: "mvp" | "full" | "prototype";
+    details: string;
+  };
+  competitors: Competitor[];
+  constraints: string[];
+  successMetrics: SuccessMetric[];
+  timeline: Milestone[];
+  references: Reference[];
   techStack?: string;
 }
 
@@ -100,6 +140,55 @@ export interface Interaction {
   action: string;
 }
 
+export type MockupElementType =
+  | "header"
+  | "text"
+  | "heading"
+  | "button"
+  | "input"
+  | "image"
+  | "card"
+  | "list"
+  | "divider"
+  | "icon"
+  | "bottomNav"
+  | "sidebar"
+  | "table"
+  | "form"
+  | "modal"
+  | "tabs"
+  | "carousel"
+  | "avatar"
+  | "badge"
+  | "toggle"
+  | "checkbox"
+  | "radio"
+  | "dropdown"
+  | "searchbar"
+  | "breadcrumb"
+  | "pagination"
+  | "progressbar"
+  | "map"
+  | "video"
+  | "chart"
+  | "spacer";
+
+export interface MockupElement {
+  id: string;
+  type: MockupElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  props: Record<string, string>;
+}
+
+export interface MockupViewport {
+  mobile: MockupElement[];
+  tablet: MockupElement[];
+  desktop: MockupElement[];
+}
+
 export interface ScreenPage {
   id: string;
   name: string;
@@ -117,6 +206,7 @@ export interface ScreenPage {
   interactions: Interaction[];
   inPages: string[];
   outPages: string[];
+  mockup?: MockupViewport;
 }
 
 export interface ScreenDesignPhase {

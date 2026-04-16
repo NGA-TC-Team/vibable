@@ -7,9 +7,17 @@ describe("overviewSchema", () => {
 
     expect(result).toEqual({
       projectName: "",
+      elevatorPitch: "",
       background: "",
+      coreValueProposition: "",
       businessGoals: [],
       targetUsers: "",
+      scope: { type: "mvp", details: "" },
+      competitors: [],
+      constraints: [],
+      successMetrics: [],
+      timeline: [],
+      references: [],
       techStack: "",
     });
   });

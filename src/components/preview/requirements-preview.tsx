@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 
@@ -22,17 +23,31 @@ export function RequirementsPreview() {
           <p className="text-muted-foreground/50 italic">요구사항을 추가하세요</p>
         ) : (
           data.functional.map((r) => (
-            <div key={r.id} className="rounded-lg border p-3 space-y-1">
+            <div key={r.id} className="rounded-lg border p-3 space-y-2">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-muted-foreground">{r.id}</span>
                 <Badge variant={priorityColor[r.priority]}>{r.priority.toUpperCase()}</Badge>
               </div>
-              <p className="font-medium">{r.title}</p>
-              <p className="text-muted-foreground">{r.description}</p>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">제목</p>
+                <p className="font-medium">{r.title}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">설명</p>
+                <p className="text-muted-foreground">{r.description}</p>
+              </div>
               {r.acceptanceCriteria.length > 0 && (
-                <ul className="ml-4 list-disc text-muted-foreground">
-                  {r.acceptanceCriteria.map((c, i) => <li key={i}>{c}</li>)}
-                </ul>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">수용 기준</p>
+                  <ul className="space-y-1">
+                    {r.acceptanceCriteria.map((c, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-muted-foreground">
+                        <CheckSquare className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                        <span>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
           ))

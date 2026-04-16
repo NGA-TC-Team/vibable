@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { PhaseData } from "@/types/phases";
+import type { PhaseData, ProjectType } from "@/types/phases";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
+export type ActiveViewport = "mobile" | "tablet" | "desktop";
 
 export type EditorState = {
   currentPhase: number;
@@ -11,6 +12,8 @@ export type EditorState = {
   saveStatus: SaveStatus;
   lastSavedAt: number | null;
   phaseData: PhaseData | null;
+  projectType: ProjectType;
+  activeViewport: ActiveViewport;
 
   setPhase: (phase: number) => void;
   togglePreview: () => void;
@@ -19,6 +22,8 @@ export type EditorState = {
   setLastSavedAt: (time: number) => void;
   setPhaseData: (data: PhaseData) => void;
   updatePhaseData: (updater: (prev: PhaseData) => PhaseData) => void;
+  setProjectType: (type: ProjectType) => void;
+  setActiveViewport: (viewport: ActiveViewport) => void;
   reset: () => void;
 };
 
@@ -29,6 +34,8 @@ const initialState = {
   saveStatus: "idle" as SaveStatus,
   lastSavedAt: null as number | null,
   phaseData: null as PhaseData | null,
+  projectType: "web" as ProjectType,
+  activeViewport: "mobile" as ActiveViewport,
 };
 
 const devEnabled = process.env.NODE_ENV === "development";
@@ -48,6 +55,8 @@ export const useEditorStore = create<EditorState>()(
         set((s) => ({
           phaseData: s.phaseData ? updater(s.phaseData) : s.phaseData,
         })),
+      setProjectType: (projectType) => set({ projectType }),
+      setActiveViewport: (activeViewport) => set({ activeViewport }),
       reset: () => set({ ...initialState }),
     }),
     { name: "vibable:editor", enabled: devEnabled },

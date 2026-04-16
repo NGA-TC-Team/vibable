@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
   Globe,
@@ -129,6 +129,9 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
             {cfg.icon}
             {cfg.label}
           </Badge>
+          <p className="text-xs text-muted-foreground">
+            생성일: {format(project.createdAt, "yyyy.MM.dd")}
+          </p>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
@@ -142,7 +145,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
             {formatDistanceToNow(project.updatedAt, {
               addSuffix: true,
               locale: ko,
-            })}
+            })}{" "}수정
           </p>
         </CardContent>
       </Card>

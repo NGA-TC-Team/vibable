@@ -61,7 +61,12 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   const removeFunctional = (index: number) => {
-    patchData({ functional: data.functional.filter((_, i) => i !== index) });
+    const remaining = data.functional.filter((_, i) => i !== index);
+    const renumbered = remaining.map((req, i) => ({
+      ...req,
+      id: `REQ-${String(i + 1).padStart(3, "0")}`,
+    }));
+    patchData({ functional: renumbered });
   };
 
   const addNonFunctional = () => {
@@ -83,9 +88,12 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
   };
 
   const removeNonFunctional = (index: number) => {
-    patchData({
-      nonFunctional: data.nonFunctional.filter((_, i) => i !== index),
-    });
+    const remaining = data.nonFunctional.filter((_, i) => i !== index);
+    const renumbered = remaining.map((req, i) => ({
+      ...req,
+      id: `NFR-${String(i + 1).padStart(3, "0")}`,
+    }));
+    patchData({ nonFunctional: renumbered });
   };
 
   return (

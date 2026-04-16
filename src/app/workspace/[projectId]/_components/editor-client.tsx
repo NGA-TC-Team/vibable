@@ -19,6 +19,7 @@ export function EditorClient({ projectId }: EditorClientProps) {
   const { data: project, isLoading, error } = useProject(projectId);
   const setPhaseData = useEditorStore((s) => s.setPhaseData);
   const setPhase = useEditorStore((s) => s.setPhase);
+  const setProjectType = useEditorStore((s) => s.setProjectType);
   const reset = useEditorStore((s) => s.reset);
 
   const [phase, setPhaseUrl] = useQueryState(
@@ -31,6 +32,7 @@ export function EditorClient({ projectId }: EditorClientProps) {
   useEffect(() => {
     if (project) {
       setPhaseData(project.phases);
+      setProjectType(project.type);
       setPhase(phase);
     }
     return () => {

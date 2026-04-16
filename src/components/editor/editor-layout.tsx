@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { VibableLogo } from "@/components/vibable-logo";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -30,6 +31,13 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+        <Link href="/workspace" className="flex items-center gap-1.5 shrink-0">
+          <VibableLogo width={24} height={24} />
+          <span className="hidden text-sm font-semibold sm:inline">vibable</span>
+        </Link>
+
+        <div className="h-5 w-px bg-border" />
+
         <Button variant="ghost" size="sm" asChild>
           <Link href="/workspace">
             <ArrowLeft className="size-4" />
