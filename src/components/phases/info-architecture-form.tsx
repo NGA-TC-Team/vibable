@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { StringList } from "@/components/editor/dynamic-list";
+import { SectionHeader } from "@/components/editor/section-header";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { SitemapNode, UserFlow, FlowStep } from "@/types/phases";
 
@@ -132,15 +134,14 @@ export function InfoArchitectureForm({
     <div className="space-y-6">
       {/* Sitemap */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">사이트맵</Label>
+        <SectionHeader title="사이트맵" tooltip={SECTION_TOOLTIPS["infoArchitecture.sitemap"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addSitemapNode}>
               <Plus className="size-3.5" />
               노드 추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.sitemap.map((node, i) => (
           <div key={node.id} className="rounded-lg border p-3 space-y-2">
             <div className="flex gap-2">
@@ -215,15 +216,14 @@ export function InfoArchitectureForm({
 
       {/* User Flows */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">유저 플로우</Label>
+        <SectionHeader title="유저 플로우" tooltip={SECTION_TOOLTIPS["infoArchitecture.userFlows"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addFlow}>
               <Plus className="size-3.5" />
               추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.userFlows.map((flow, fi) => (
           <div key={flow.id} className="rounded-lg border p-3 space-y-2">
             <div className="flex gap-2">
@@ -284,9 +284,7 @@ export function InfoArchitectureForm({
 
       {/* Global Nav Rules */}
       <section className="space-y-2">
-        <Label className="text-base font-semibold">
-          글로벌 네비게이션 규칙
-        </Label>
+        <SectionHeader title="글로벌 네비게이션 규칙" tooltip={SECTION_TOOLTIPS["infoArchitecture.navRules"]} />
         <StringList
           items={data.globalNavRules}
           onChange={(globalNavRules) => patchData({ globalNavRules })}

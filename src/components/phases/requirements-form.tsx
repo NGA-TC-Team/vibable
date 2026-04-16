@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StringList } from "@/components/editor/dynamic-list";
+import { SectionHeader } from "@/components/editor/section-header";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { FunctionalRequirement, NonFunctionalRequirement } from "@/types/phases";
 
@@ -99,15 +101,14 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">기능 요구사항</Label>
+        <SectionHeader title="기능 요구사항" tooltip={SECTION_TOOLTIPS["requirements.functional"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addFunctional}>
               <Plus className="size-3.5" />
               추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.functional.map((req, i) => (
           <div key={req.id} className="rounded-lg border p-3 space-y-2">
             <div className="flex items-start justify-between gap-2">
@@ -175,15 +176,14 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">비기능 요구사항</Label>
+        <SectionHeader title="비기능 요구사항" tooltip={SECTION_TOOLTIPS["requirements.nonFunctional"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addNonFunctional}>
               <Plus className="size-3.5" />
               추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.nonFunctional.map((req, i) => (
           <div key={req.id} className="flex gap-2 items-start">
             <span className="mt-2 text-xs font-mono text-muted-foreground shrink-0">

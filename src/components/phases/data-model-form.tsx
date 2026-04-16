@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SectionHeader } from "@/components/editor/section-header";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { Entity, EntityField, DataModelPhase } from "@/types/phases";
 
@@ -87,15 +89,14 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">엔티티</Label>
+        <SectionHeader title="엔티티" tooltip={SECTION_TOOLTIPS["dataModel.entities"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addEntity}>
               <Plus className="size-3.5" />
               엔티티 추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.entities.map((entity, ei) => (
           <div key={entity.id} className="rounded-lg border p-3 space-y-3">
             <div className="flex gap-2">
@@ -188,7 +189,7 @@ export function DataModelForm({ disabled = false }: { disabled?: boolean }) {
       </section>
 
       <section className="space-y-3">
-        <Label className="text-base font-semibold">저장 전략</Label>
+        <SectionHeader title="저장 전략" tooltip={SECTION_TOOLTIPS["dataModel.storage"]} />
         <RadioGroup
           value={data.storageStrategy}
           onValueChange={(v) =>

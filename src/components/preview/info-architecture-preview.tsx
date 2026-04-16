@@ -1,12 +1,25 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePhaseData } from "@/hooks/use-phase.hook";
+import { useEditorStore } from "@/services/store/editor-store";
 import { SitemapDiagram } from "./sitemap-diagram";
 import { UserFlowDiagram } from "./user-flow-diagram";
 
 export function InfoArchitecturePreview() {
   const { data } = usePhaseData("infoArchitecture");
+  const infoArchView = useEditorStore((s) => s.infoArchView);
+  const setInfoArchView = useEditorStore((s) => s.setInfoArchView);
+  const selectedFlowId = useEditorStore((s) => s.selectedFlowId);
+  const setSelectedFlowId = useEditorStore((s) => s.setSelectedFlowId);
+
   if (!data) return null;
 
   const hasSitemap = data.sitemap.length > 0;
@@ -21,42 +34,70 @@ export function InfoArchitecturePreview() {
     );
   }
 
-  const defaultTab = hasSitemap ? "sitemap" : data.userFlows[0]?.id ?? "sitemap";
+  const activeFlowId = selectedFlowId ?? data.userFlows[0]?.id ?? null;
+  const activeFlow = data.userFlows.find((f) => f.id === activeFlowId);
 
   return (
-    <div className="space-y-4 text-sm">
-      <Tabs defaultValue={defaultTab}>
-        <TabsList>
-          {hasSitemap && <TabsTrigger value="sitemap">사이트맵</TabsTrigger>}
-          {data.userFlows.map((flow) => (
-            <TabsTrigger key={flow.id} value={flow.id}>
-              {flow.name || "유저 플로우"}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <div className="flex flex-col gap-4 text-sm">
+      <ToggleGroup
+        type="single"
+        value={infoArchView}
+        onValueChange={(v) => {
+          if (v === "sitemap" || v === "userFlow") setInfoArchView(v);
+        }}
+        className="self-start"
+      >
+        <ToggleGroupItem value="sitemap" className="text-xs">
+          사이트맵
+        </ToggleGroupItem>
+        <ToggleGroupItem value="userFlow" className="text-xs">
+          유저 플로우
+        </ToggleGroupItem>
+      </ToggleGroup>
 
-        {hasSitemap && (
-          <TabsContent value="sitemap" className="space-y-4">
+      {infoArchView === "sitemap" && (
+        <div className="space-y-4">
+          {hasSitemap ? (
             <SitemapDiagram sitemap={data.sitemap} />
-            {hasRules && (
-              <section className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">네비게이션 규칙</h3>
-                <ul className="ml-4 list-disc text-sm">
-                  {data.globalNavRules.filter(Boolean).map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </TabsContent>
-        )}
+          ) : (
+            <p className="text-muted-foreground/50 italic">사이트맵을 추가하세요</p>
+          )}
+          {hasRules && (
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">네비게이션 규칙</h3>
+              <ul className="ml-4 list-disc text-sm">
+                {data.globalNavRules.filter(Boolean).map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
 
-        {data.userFlows.map((flow) => (
-          <TabsContent key={flow.id} value={flow.id}>
-            <UserFlowDiagram flow={flow} />
-          </TabsContent>
-        ))}
-      </Tabs>
+      {infoArchView === "userFlow" && (
+        <div className="space-y-3">
+          {hasFlows ? (
+            <>
+              <Select value={activeFlowId ?? undefined} onValueChange={setSelectedFlowId}>
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="플로우 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.userFlows.map((flow) => (
+                    <SelectItem key={flow.id} value={flow.id}>
+                      {flow.name || "유저 플로우"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {activeFlow && <UserFlowDiagram flow={activeFlow} />}
+            </>
+          ) : (
+            <p className="text-muted-foreground/50 italic">유저 플로우를 추가하세요</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

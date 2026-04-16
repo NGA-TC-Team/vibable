@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VibableLogo } from "@/components/vibable-logo";
@@ -27,6 +28,8 @@ interface EditorLayoutProps {
 
 export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
   const isReadOnly = useEditorStore((s) => s.isReadOnly);
+  const isSidebarCollapsed = useEditorStore((s) => s.isSidebarCollapsed);
+  const setPrintPreview = useEditorStore((s) => s.setPrintPreview);
 
   return (
     <div className="flex h-screen flex-col">
@@ -61,7 +64,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-48 shrink-0 border-r p-3 md:block">
+        <aside className={cn("hidden shrink-0 border-r p-3 md:block transition-all", isSidebarCollapsed ? "w-14" : "w-48")}>
           <PhaseNav
             projectType={project.type}
             onPhaseChange={onPhaseChange}
@@ -74,6 +77,15 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
               {!isReadOnly && (
                 <div className="flex items-center gap-2 border-b px-4 py-2">
                   <MemoModal />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 ml-auto"
+                    onClick={() => setPrintPreview(true)}
+                  >
+                    <Printer className="size-3.5" />
+                    출력 미리보기
+                  </Button>
                 </div>
               )}
               <div className="flex-1 overflow-hidden">

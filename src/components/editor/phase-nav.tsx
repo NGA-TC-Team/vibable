@@ -9,8 +9,18 @@ import {
   Database,
   Palette,
   AlertCircle,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { PHASE_LABELS, type ProjectType } from "@/types/phases";
 import { useEditorStore } from "@/services/store/editor-store";
 
@@ -65,6 +75,8 @@ interface PhaseNavProps {
 export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
   const currentPhase = useEditorStore((s) => s.currentPhase);
   const phaseData = useEditorStore((s) => s.phaseData);
+  const isSidebarCollapsed = useEditorStore((s) => s.isSidebarCollapsed);
+  const toggleSidebar = useEditorStore((s) => s.toggleSidebar);
 
   const cliLabels: Record<number, string> = {
     3: "커맨드 트리",
@@ -72,14 +84,87 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
     6: "UX 라이팅",
   };
 
+  const completedCount = Array.from({ length: 7 }).reduce<number>((acc, _, i) => {
+    const dataKey = PHASE_DATA_KEYS[i];
+    return acc + (phaseData ? (isPhaseComplete(i, phaseData[dataKey]) ? 1 : 0) : 0);
+  }, 0);
+
+  const progressPercent = Math.round((completedCount / 7) * 100);
+
+  if (isSidebarCollapsed) {
+    return (
+      <TooltipProvider>
+        <nav className="flex flex-col items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-xs" onClick={toggleSidebar} className="mb-2">
+                <PanelLeft className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">펼치기</TooltipContent>
+          </Tooltip>
+
+          <div className="relative mb-2 h-16 w-1.5 rounded-full bg-muted">
+            <div
+              className="absolute bottom-0 w-full rounded-full bg-primary transition-all"
+              style={{ height: `${progressPercent}%` }}
+            />
+          </div>
+          <span className="mb-2 text-[10px] text-muted-foreground">{completedCount}/7</span>
+
+          {Array.from({ length: 7 }).map((_, i) => {
+            const Icon = phaseIcons[i];
+            const baseLabel =
+              projectType === "cli" && cliLabels[i] ? cliLabels[i] : PHASE_LABELS[i];
+            const active = currentPhase === i;
+
+            return (
+              <Tooltip key={i}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onPhaseChange(i)}
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-lg transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{baseLabel}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </nav>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <nav className="flex flex-col gap-1">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex flex-1 items-center gap-2">
+          <Progress value={progressPercent} className="h-1.5 flex-1" />
+          <span className="text-xs text-muted-foreground">{completedCount}/7</span>
+        </div>
+        <Button variant="ghost" size="icon-xs" onClick={toggleSidebar} className="ml-2">
+          <PanelLeftClose className="size-4" />
+        </Button>
+      </div>
+
       {Array.from({ length: 7 }).map((_, i) => {
         const Icon = phaseIcons[i];
-        const label =
+        const baseLabel =
           projectType === "cli" && cliLabels[i]
             ? cliLabels[i]
             : PHASE_LABELS[i];
+        const screenCount =
+          i === 4 && phaseData?.screenDesign?.pages?.length
+            ? ` (${phaseData.screenDesign.pages.length})`
+            : "";
+        const label = `${baseLabel}${screenCount}`;
         const dataKey = PHASE_DATA_KEYS[i];
         const complete = phaseData
           ? isPhaseComplete(i, phaseData[dataKey])

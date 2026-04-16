@@ -19,6 +19,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEditorStore } from "@/services/store/editor-store";
 import { templatesByPhase } from "@/lib/templates";
+import { AiProviderLinks } from "./ai-provider-links";
 
 export function TemplatePromptModal() {
   const currentPhase = useEditorStore((s) => s.currentPhase);
@@ -37,13 +38,14 @@ export function TemplatePromptModal() {
           AI 템플릿
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex max-h-[85vh] w-[min(96vw,72rem)] max-w-5xl flex-col overflow-hidden p-0">
+      <DialogContent className="flex max-h-[85vh] w-[min(96vw,72rem)] md:w-[min(96vw,80rem)] max-w-5xl flex-col overflow-hidden p-0">
         <DialogHeader className="gap-2 border-b px-6 py-5">
           <DialogTitle className="text-xl">AI 템플릿 프롬프트</DialogTitle>
           <p className="text-sm leading-6 text-muted-foreground">
             각 템플릿은 few-shot 예시가 포함된 완결형 프롬프트입니다. 펼쳐서
             그대로 복사한 뒤 AI에 붙여넣으세요.
           </p>
+          <AiProviderLinks />
         </DialogHeader>
 
         <ScrollArea className="flex-1">
@@ -81,7 +83,7 @@ export function TemplatePromptModal() {
                           프롬프트 복사
                         </Button>
                       </div>
-                      <pre className="whitespace-pre-wrap wrap-break-word px-4 py-4 font-mono text-sm leading-7 text-foreground md:text-[15px]">
+                      <pre className="max-h-[50vh] overflow-y-auto whitespace-pre-wrap wrap-break-word px-4 py-4 font-mono text-sm leading-7 text-foreground md:text-[15px]">
                         {t.promptTemplate}
                       </pre>
                     </div>

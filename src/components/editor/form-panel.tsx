@@ -11,8 +11,20 @@ import { ScreenDesignForm } from "@/components/phases/screen-design-form";
 import { DataModelForm } from "@/components/phases/data-model-form";
 import { DesignSystemForm } from "@/components/phases/design-system-form";
 import { TemplatePromptModal } from "./template-prompt-modal";
+import { SectionHeader } from "./section-header";
 import { useJsonPaste } from "@/hooks/use-json-paste.hook";
 import { PHASE_LABELS } from "@/types/phases";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
+
+const PHASE_TOOLTIP_KEYS = [
+  "phase.overview",
+  "phase.userScenario",
+  "phase.requirements",
+  "phase.infoArchitecture",
+  "phase.screenDesign",
+  "phase.dataModel",
+  "phase.designSystem",
+] as const;
 
 const formComponents: Record<
   number,
@@ -39,12 +51,12 @@ export function FormPanel() {
   return (
     <ScrollArea className="h-full">
       <div ref={containerRef} className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
-            {PHASE_LABELS[currentPhase]}
-          </h2>
+        <SectionHeader
+          title={PHASE_LABELS[currentPhase]}
+          tooltip={SECTION_TOOLTIPS[PHASE_TOOLTIP_KEYS[currentPhase]] ?? ""}
+        >
           {!isReadOnly && <TemplatePromptModal />}
-        </div>
+        </SectionHeader>
         {Form ? (
           <Form disabled={isReadOnly} />
         ) : (

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   Document,
   Font,
@@ -450,39 +451,130 @@ function InfoArchitecturePage({ project }: { project: Project }) {
 
 function ScreenDesignPage({ project }: { project: Project }) {
   const d = project.phases.screenDesign;
-  return (
-    <Page size="A4" orientation="landscape" style={s.page} wrap>
-      <PageHeader projectName={project.name} phaseName={PHASE_LABELS[4]} />
-      <Text style={s.sectionTitle}>화면 설계</Text>
 
+  return (
+    <>
       {d.pages.map((page) => (
-        <View key={page.id} style={s.card} wrap={false}>
-          <Text style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
-            {page.name}{page.route ? ` (${page.route})` : ""}
-          </Text>
-          {(page.uxIntent.userGoal || page.uxIntent.businessIntent) && (
-            <Text style={s.paragraph}>
-              유저 목표: {page.uxIntent.userGoal || "-"} | 비즈니스 의도: {page.uxIntent.businessIntent || "-"}
-            </Text>
-          )}
-          {page.states.idle && <Text style={s.listItem}>• Idle: {page.states.idle}</Text>}
-          {page.states.loading && <Text style={s.listItem}>• Loading: {page.states.loading}</Text>}
-          {page.states.offline && <Text style={s.listItem}>• Offline: {page.states.offline}</Text>}
-          {page.states.errors.length > 0 && page.states.errors.map((err, i) => (
-            <Text key={i} style={s.listItem}>• Error ({err.type}): {err.description}</Text>
-          ))}
-          {page.interactions.length > 0 && (
-            <>
-              <Text style={{ fontSize: 9, color: "#666", marginTop: 4, marginBottom: 2 }}>인터랙션:</Text>
-              {page.interactions.map((ia, i) => (
-                <Text key={i} style={s.listItem}>• {ia.element} → {ia.trigger} → {ia.action}</Text>
-              ))}
-            </>
-          )}
-        </View>
+        <React.Fragment key={page.id}>
+          <Page size="A4" orientation="landscape" style={s.page} wrap>
+            <PageHeader projectName={project.name} phaseName={`${PHASE_LABELS[4]} — ${page.name || "이름 없음"}`} />
+            <Text style={s.sectionTitle}>{page.name || "이름 없음"}{page.route ? ` (${page.route})` : ""}</Text>
+            <View style={{
+              flex: 1,
+              borderWidth: 1,
+              borderColor: "#e5e5e5",
+              borderRadius: 4,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 12,
+            }}>
+              <Text style={{ fontSize: 12, color: "#999" }}>화면 목업 (Placeholder)</Text>
+            </View>
+            <PageFooter />
+          </Page>
+
+          <Page size="A4" orientation="landscape" style={s.page} wrap>
+            <PageHeader projectName={project.name} phaseName={`${PHASE_LABELS[4]} — ${page.name || "이름 없음"} (상세)`} />
+
+            {(page.uxIntent.userGoal || page.uxIntent.businessIntent) && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={s.subTitle}>UX 의도</Text>
+                <View style={s.table}>
+                  <View style={s.tableHeader}>
+                    <Text style={s.tableCellBold}>유저 목표</Text>
+                    <Text style={s.tableCellBold}>비즈니스 의도</Text>
+                  </View>
+                  <View style={s.tableRow}>
+                    <Text style={s.tableCell}>{page.uxIntent.userGoal || "-"}</Text>
+                    <Text style={s.tableCell}>{page.uxIntent.businessIntent || "-"}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <View style={{ marginBottom: 12 }}>
+              <Text style={s.subTitle}>상태별 UI</Text>
+              <View style={s.table}>
+                <View style={s.tableHeader}>
+                  <Text style={s.tableCellBold}>상태</Text>
+                  <Text style={[s.tableCellBold, { flex: 3 }]}>설명</Text>
+                </View>
+                {page.states.idle ? (
+                  <View style={s.tableRow}>
+                    <Text style={s.tableCell}>Idle</Text>
+                    <Text style={[s.tableCell, { flex: 3 }]}>{page.states.idle}</Text>
+                  </View>
+                ) : null}
+                {page.states.loading ? (
+                  <View style={s.tableRow}>
+                    <Text style={s.tableCell}>Loading</Text>
+                    <Text style={[s.tableCell, { flex: 3 }]}>{page.states.loading}</Text>
+                  </View>
+                ) : null}
+                {page.states.offline ? (
+                  <View style={s.tableRow}>
+                    <Text style={s.tableCell}>Offline</Text>
+                    <Text style={[s.tableCell, { flex: 3 }]}>{page.states.offline}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            {page.states.errors.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={s.subTitle}>에러 상태</Text>
+                <View style={s.table}>
+                  <View style={s.tableHeader}>
+                    <Text style={[s.tableCellBold, { flex: 0.5 }]}>타입</Text>
+                    <Text style={[s.tableCellBold, { flex: 2 }]}>설명</Text>
+                  </View>
+                  {page.states.errors.map((err, i) => (
+                    <View key={i} style={s.tableRow}>
+                      <Text style={[s.tableCell, { flex: 0.5 }]}>{err.type}</Text>
+                      <Text style={[s.tableCell, { flex: 2 }]}>{err.description}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {page.interactions.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={s.subTitle}>인터랙션</Text>
+                <View style={s.table}>
+                  <View style={s.tableHeader}>
+                    <Text style={s.tableCellBold}>요소</Text>
+                    <Text style={s.tableCellBold}>트리거</Text>
+                    <Text style={s.tableCellBold}>액션</Text>
+                  </View>
+                  {page.interactions.map((ia, i) => (
+                    <View key={i} style={s.tableRow}>
+                      <Text style={s.tableCell}>{ia.element}</Text>
+                      <Text style={s.tableCell}>{ia.trigger}</Text>
+                      <Text style={s.tableCell}>{ia.action}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {(page.inPages.filter(Boolean).length > 0 || page.outPages.filter(Boolean).length > 0) && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={s.subTitle}>연결 페이지</Text>
+                {page.inPages.filter(Boolean).length > 0 && (
+                  <Text style={s.paragraph}>In: {page.inPages.filter(Boolean).join(", ")}</Text>
+                )}
+                {page.outPages.filter(Boolean).length > 0 && (
+                  <Text style={s.paragraph}>Out: {page.outPages.filter(Boolean).join(", ")}</Text>
+                )}
+              </View>
+            )}
+
+            <PageFooter />
+          </Page>
+        </React.Fragment>
       ))}
-      <PageFooter />
-    </Page>
+    </>
   );
 }
 

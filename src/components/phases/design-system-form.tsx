@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StringList } from "@/components/editor/dynamic-list";
+import { SectionHeader } from "@/components/editor/section-header";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type {
   DesignSystemPhase,
@@ -131,7 +133,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
     <div className="space-y-6">
       {/* § 1 Visual Theme */}
       <section className="space-y-3">
-        <Label className="text-base font-semibold">§ 1. 비주얼 테마</Label>
+        <SectionHeader title="§ 1. 비주얼 테마" tooltip={SECTION_TOOLTIPS["designSystem.visualTheme"]} />
         <Input
           placeholder="분위기 (예: Minimal and warm)"
           value={data.visualTheme.mood}
@@ -170,14 +172,13 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* § 2 Color Palette */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">§ 2. 컬러 팔레트</Label>
+        <SectionHeader title="§ 2. 컬러 팔레트" tooltip={SECTION_TOOLTIPS["designSystem.colorPalette"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addColor}>
               <Plus className="size-3.5" />
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.colorPalette.map((token, i) => (
           <div key={i} className="flex gap-2 items-center">
             <input
@@ -214,14 +215,13 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* § 3 Typography */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">§ 3. 타이포그래피</Label>
+        <SectionHeader title="§ 3. 타이포그래피" tooltip={SECTION_TOOLTIPS["designSystem.typography"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addTypeScale}>
               <Plus className="size-3.5" />
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.typography.scale.map((entry, i) => (
           <div key={i} className="grid grid-cols-4 gap-2">
             <Input
@@ -267,16 +267,13 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* § 4 Components */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">
-            § 4. 컴포넌트 스타일
-          </Label>
+        <SectionHeader title="§ 4. 컴포넌트 스타일" tooltip={SECTION_TOOLTIPS["designSystem.components"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addComponent}>
               <Plus className="size-3.5" />
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.components.map((comp, i) => (
           <div key={i} className="rounded-lg border p-3 space-y-2">
             <div className="flex gap-2">
@@ -322,7 +319,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* § 5 Layout */}
       <section className="space-y-3">
-        <Label className="text-base font-semibold">§ 5. 레이아웃</Label>
+        <SectionHeader title="§ 5. 레이아웃" tooltip={SECTION_TOOLTIPS["designSystem.layout"]} />
         <Input
           placeholder="최대 콘텐츠 너비 (예: 1280px)"
           value={data.layout.maxContentWidth}
@@ -346,7 +343,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* § 7 Do's and Don'ts */}
       <section className="space-y-3">
-        <Label className="text-base font-semibold">§ 7. Do&apos;s and Don&apos;ts</Label>
+        <SectionHeader title="§ 7. Do's and Don'ts" tooltip={SECTION_TOOLTIPS["designSystem.guidelines"]} />
         <div className="space-y-2">
           <Label className="text-xs">Do&apos;s</Label>
           <StringList
@@ -369,7 +366,7 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* UX Writing */}
       <section className="space-y-3">
-        <Label className="text-base font-semibold">UX 라이팅</Label>
+        <SectionHeader title="UX 라이팅" tooltip={SECTION_TOOLTIPS["designSystem.uxWriting"]} />
         <div className="space-y-2">
           <Label className="text-xs">
             톤 레벨: {toneLabels[data.uxWriting.toneLevel]}

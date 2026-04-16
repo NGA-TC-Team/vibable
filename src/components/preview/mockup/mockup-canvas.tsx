@@ -42,6 +42,7 @@ export function MockupCanvas({
 
   const canvasWidth = VIEWPORT_WIDTHS[viewport];
   const canvasHeight = projectType === "mobile" || viewport === "mobile" ? 812 : 600;
+  const scale = viewport === "desktop" ? 0.55 : 1;
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -53,11 +54,23 @@ export function MockupCanvas({
       if (data?.source === "palette") {
         const type = data.type as MockupElementType;
         const size = getDefaultSize(type);
+        const canvasRect = canvasRef.current?.getBoundingClientRect();
+
+        let x = 20;
+        let y = 20;
+
+        if (canvasRect && event.activatorEvent instanceof PointerEvent) {
+          const clientX = event.activatorEvent.clientX + delta.x;
+          const clientY = event.activatorEvent.clientY + delta.y;
+          x = Math.max(0, Math.round((clientX - canvasRect.left) / scale));
+          y = Math.max(0, Math.round((clientY - canvasRect.top) / scale));
+        }
+
         const newEl: MockupElement = {
           id: crypto.randomUUID(),
           type,
-          x: Math.max(0, Math.round(delta.x)),
-          y: Math.max(0, Math.round(delta.y)),
+          x,
+          y,
           width: size.width,
           height: size.height,
           props: {},
@@ -72,14 +85,14 @@ export function MockupCanvas({
         el.id === elId
           ? {
               ...el,
-              x: Math.max(0, Math.round(el.x + delta.x)),
-              y: Math.max(0, Math.round(el.y + delta.y)),
+              x: Math.max(0, Math.round(el.x + delta.x / scale)),
+              y: Math.max(0, Math.round(el.y + delta.y / scale)),
             }
           : el,
       );
       onMockupChange(updated);
     },
-    [elements, onMockupChange],
+    [elements, onMockupChange, scale],
   );
 
   useEffect(() => {
@@ -96,8 +109,6 @@ export function MockupCanvas({
   }, [selectedId, elements, onMockupChange]);
 
   const { setNodeRef: setDroppableRef } = useDroppable({ id: "mockup-canvas" });
-
-  const scale = viewport === "desktop" ? 0.55 : 1;
 
   const canvasContent = (
     <div

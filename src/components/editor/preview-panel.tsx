@@ -8,6 +8,7 @@ import { InfoArchitecturePreview } from "@/components/preview/info-architecture-
 import { ScreenDesignPreview } from "@/components/preview/screen-design-preview";
 import { DataModelPreview } from "@/components/preview/data-model-preview";
 import { DesignSystemPreview } from "@/components/preview/design-system-preview";
+import { PrintPreview } from "./print-preview";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const previewComponents: Record<number, React.ComponentType> = {
@@ -22,7 +23,20 @@ const previewComponents: Record<number, React.ComponentType> = {
 
 export function PreviewPanel() {
   const currentPhase = useEditorStore((s) => s.currentPhase);
+  const isPrintPreview = useEditorStore((s) => s.isPrintPreview);
   const Preview = previewComponents[currentPhase];
+
+  if (isPrintPreview) {
+    return <PrintPreview />;
+  }
+
+  if (currentPhase === 4 && Preview) {
+    return (
+      <div className="h-full w-full overflow-hidden">
+        <Preview />
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="h-full">

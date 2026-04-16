@@ -384,6 +384,12 @@ export function MockupElementView({ element, selected, onSelect }: MockupElement
       }}
     >
       {renderer(element)}
+      {selected && (
+        <div className="pointer-events-none absolute -top-5 left-0 flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-[9px] font-medium text-primary-foreground shadow-sm">
+          {ELEMENT_LABELS[element.type] ?? element.type}
+          <span className="opacity-70">{element.width}×{element.height}</span>
+        </div>
+      )}
     </div>
   );
 }

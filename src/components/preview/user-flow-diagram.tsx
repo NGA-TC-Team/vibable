@@ -50,12 +50,16 @@ function userFlowToFlow(flow: UserFlow): { nodes: Node[]; edges: Edge[] } {
     });
   });
 
+  const edgeStyle = { strokeDasharray: "6 3" };
+
   if (flow.steps.length > 0) {
     edges.push({
       id: `e-start-${flow.steps[0].id}`,
       source: startId,
       target: flow.steps[0].id,
       type: "smoothstep",
+      animated: true,
+      style: edgeStyle,
     });
   }
 
@@ -71,6 +75,8 @@ function userFlowToFlow(flow: UserFlow): { nodes: Node[]; edges: Edge[] } {
           source: step.id,
           target: nextId,
           type: "smoothstep",
+          animated: true,
+          style: edgeStyle,
         });
       }
     });
@@ -94,6 +100,8 @@ function userFlowToFlow(flow: UserFlow): { nodes: Node[]; edges: Edge[] } {
         source: step.id,
         target: endId,
         type: "smoothstep",
+        animated: true,
+        style: edgeStyle,
       });
     });
   }

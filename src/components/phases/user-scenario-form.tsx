@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StringList } from "@/components/editor/dynamic-list";
+import { SectionHeader } from "@/components/editor/section-header";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type { Persona, UserStory } from "@/types/phases";
 
@@ -65,15 +67,14 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
     <div className="space-y-6">
       {/* Personas */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">페르소나</Label>
+        <SectionHeader title="페르소나" tooltip={SECTION_TOOLTIPS["userScenario.personas"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addPersona}>
               <Plus className="size-3.5" />
               추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.personas.map((persona, i) => (
           <div key={persona.id} className="rounded-lg border p-3 space-y-3">
             <div className="flex items-start justify-between">
@@ -126,15 +127,14 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* User Stories */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">유저 스토리</Label>
+        <SectionHeader title="유저 스토리" tooltip={SECTION_TOOLTIPS["userScenario.userStories"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addStory}>
               <Plus className="size-3.5" />
               추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.userStories.map((story, i) => (
           <div key={story.id} className="rounded-lg border p-3 space-y-2">
             <div className="flex items-start justify-between">
@@ -188,7 +188,7 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
 
       {/* Scenarios */}
       <section className="space-y-2">
-        <Label className="text-base font-semibold">성공 시나리오</Label>
+        <SectionHeader title="성공 시나리오" tooltip={SECTION_TOOLTIPS["userScenario.successScenarios"]} />
         <StringList
           items={data.successScenarios}
           onChange={(successScenarios) => patchData({ successScenarios })}
@@ -198,7 +198,7 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
       </section>
 
       <section className="space-y-2">
-        <Label className="text-base font-semibold">실패 시나리오</Label>
+        <SectionHeader title="실패 시나리오" tooltip={SECTION_TOOLTIPS["userScenario.failureScenarios"]} />
         <StringList
           items={data.failureScenarios}
           onChange={(failureScenarios) => patchData({ failureScenarios })}

@@ -5,6 +5,8 @@ import type { PhaseData, ProjectType } from "@/types/phases";
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type ActiveViewport = "mobile" | "tablet" | "desktop";
 
+export type InfoArchView = "sitemap" | "userFlow";
+
 export type EditorState = {
   currentPhase: number;
   isPreviewCollapsed: boolean;
@@ -14,6 +16,12 @@ export type EditorState = {
   phaseData: PhaseData | null;
   projectType: ProjectType;
   activeViewport: ActiveViewport;
+  isSidebarCollapsed: boolean;
+  isPrintPreview: boolean;
+  printPreviewPage: number;
+  activeScreenPageId: string | null;
+  infoArchView: InfoArchView;
+  selectedFlowId: string | null;
 
   setPhase: (phase: number) => void;
   togglePreview: () => void;
@@ -24,6 +32,12 @@ export type EditorState = {
   updatePhaseData: (updater: (prev: PhaseData) => PhaseData) => void;
   setProjectType: (type: ProjectType) => void;
   setActiveViewport: (viewport: ActiveViewport) => void;
+  toggleSidebar: () => void;
+  setInfoArchView: (view: InfoArchView) => void;
+  setSelectedFlowId: (id: string | null) => void;
+  setPrintPreview: (on: boolean) => void;
+  setPrintPreviewPage: (page: number) => void;
+  setActiveScreenPageId: (id: string | null) => void;
   reset: () => void;
 };
 
@@ -36,6 +50,12 @@ const initialState = {
   phaseData: null as PhaseData | null,
   projectType: "web" as ProjectType,
   activeViewport: "mobile" as ActiveViewport,
+  isSidebarCollapsed: false,
+  isPrintPreview: false,
+  printPreviewPage: 0,
+  activeScreenPageId: null as string | null,
+  infoArchView: "sitemap" as InfoArchView,
+  selectedFlowId: null as string | null,
 };
 
 const devEnabled = process.env.NODE_ENV === "development";
@@ -57,6 +77,15 @@ export const useEditorStore = create<EditorState>()(
         })),
       setProjectType: (projectType) => set({ projectType }),
       setActiveViewport: (activeViewport) => set({ activeViewport }),
+      toggleSidebar: () =>
+        set((s) => ({ isSidebarCollapsed: !s.isSidebarCollapsed })),
+      setInfoArchView: (infoArchView) => set({ infoArchView }),
+      setSelectedFlowId: (selectedFlowId) => set({ selectedFlowId }),
+      setPrintPreview: (isPrintPreview) =>
+        set({ isPrintPreview, printPreviewPage: 0 }),
+      setPrintPreviewPage: (printPreviewPage) => set({ printPreviewPage }),
+      setActiveScreenPageId: (activeScreenPageId) =>
+        set({ activeScreenPageId }),
       reset: () => set({ ...initialState }),
     }),
     { name: "vibable:editor", enabled: devEnabled },

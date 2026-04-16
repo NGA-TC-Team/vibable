@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DynamicList, StringList } from "@/components/editor/dynamic-list";
+import { SectionHeader } from "@/components/editor/section-header";
+import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import type {
   Competitor,
@@ -163,15 +165,14 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label>비즈니스 목표</Label>
+        <SectionHeader title="비즈니스 목표" tooltip={SECTION_TOOLTIPS["overview.businessGoals"]}>
           {!disabled && (
             <Button variant="ghost" size="xs" onClick={addGoal}>
               <Plus className="size-3.5" />
               추가
             </Button>
           )}
-        </div>
+        </SectionHeader>
         {data.businessGoals.length === 0 && (
           <p className="text-sm text-muted-foreground">
             목표를 추가해 주세요
