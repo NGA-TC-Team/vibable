@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSystemStore } from "@/services/stores";
+import { useSystemStore } from "@/services/store";
 
 export function StoreEffects() {
   useEffect(() => {
