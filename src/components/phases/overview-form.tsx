@@ -1,9 +1,23 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  Building2,
+  Calendar,
+  Layers3,
+  Plus,
+  Target,
+  TextCursorInput,
+  TriangleAlert,
+  Users,
+  Wrench,
+  X,
+} from "lucide-react";
+import { FieldLabel } from "@/components/editor/field-label";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -120,7 +134,13 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
   return (
     <SectionGroup>
       <div className="space-y-2">
-        <Label htmlFor="ov-project-name">프로젝트명</Label>
+        <FieldLabel
+          htmlFor="ov-project-name"
+          icon={Layers3}
+          tooltip="사용자와 팀이 공통으로 부를 서비스 또는 프로젝트 이름입니다."
+        >
+          프로젝트명
+        </FieldLabel>
         <Input
           id="ov-project-name"
           placeholder="서비스 이름을 입력하세요"
@@ -131,7 +151,13 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ov-elevator-pitch">한줄 소개</Label>
+        <FieldLabel
+          htmlFor="ov-elevator-pitch"
+          icon={TextCursorInput}
+          tooltip="서비스의 핵심 가치를 한 문장으로 압축해 설명합니다."
+        >
+          한줄 소개
+        </FieldLabel>
         <Input
           id="ov-elevator-pitch"
           placeholder="140자 이내로 서비스를 소개하세요"
@@ -143,7 +169,13 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ov-background">개발 배경</Label>
+        <FieldLabel
+          htmlFor="ov-background"
+          icon={TextCursorInput}
+          tooltip="이 프로젝트를 시작하게 된 문제와 맥락을 정리합니다."
+        >
+          개발 배경
+        </FieldLabel>
         <Textarea
           id="ov-background"
           placeholder="왜 이 프로젝트를 만드는지 설명하세요"
@@ -155,7 +187,13 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ov-core-value">핵심 가치 제안</Label>
+        <FieldLabel
+          htmlFor="ov-core-value"
+          icon={Target}
+          tooltip="사용자에게 전달할 가장 핵심적인 차별화 포인트를 적습니다."
+        >
+          핵심 가치 제안
+        </FieldLabel>
         <Textarea
           id="ov-core-value"
           placeholder="이 서비스의 차별화 포인트를 짧게 설명하세요"
@@ -180,29 +218,39 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
             목표를 추가해 주세요
           </p>
         )}
-        {data.businessGoals.map((goal, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <Input
-              placeholder={`목표 ${i + 1}`}
-              value={goal}
-              onChange={(e) => updateGoal(i, e.target.value)}
-              disabled={disabled}
-            />
-            {!disabled && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => removeGoal(i)}
-              >
-                <X className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        ))}
+        <AnimatedList className="space-y-2">
+          {data.businessGoals.map((goal, i) => (
+            <AnimatedListItem key={`goal-${i}`}>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder={`목표 ${i + 1}`}
+                  value={goal}
+                  onChange={(e) => updateGoal(i, e.target.value)}
+                  disabled={disabled}
+                />
+                {!disabled && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => removeGoal(i)}
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ov-target-users">타깃 유저</Label>
+        <FieldLabel
+          htmlFor="ov-target-users"
+          icon={Users}
+          tooltip="이 서비스를 가장 자주 사용할 주요 사용자군을 설명합니다."
+        >
+          타깃 유저
+        </FieldLabel>
         <Textarea
           id="ov-target-users"
           placeholder="주요 타깃 유저를 설명하세요"
@@ -214,7 +262,12 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label>프로젝트 범위</Label>
+        <FieldLabel
+          icon={Layers3}
+          tooltip="이번 단계에서 포함할 범위와 제외할 범위를 나눠 적습니다."
+        >
+          프로젝트 범위
+        </FieldLabel>
         <div className="flex gap-2">
           <Select
             value={data.scope?.type ?? "mvp"}
@@ -241,7 +294,12 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label>경쟁사 / 대안</Label>
+        <FieldLabel
+          icon={Building2}
+          tooltip="비슷한 문제를 푸는 경쟁 서비스나 대안을 비교합니다."
+        >
+          경쟁사 / 대안
+        </FieldLabel>
         <DynamicList
           items={data.competitors ?? []}
           onAdd={addCompetitor}
@@ -281,7 +339,12 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label>제약사항</Label>
+        <FieldLabel
+          icon={TriangleAlert}
+          tooltip="예산, 일정, 리소스처럼 설계에 영향을 주는 제약을 적습니다."
+        >
+          제약사항
+        </FieldLabel>
         <StringList
           items={data.constraints ?? []}
           onChange={(constraints) => patchData({ constraints })}
@@ -293,7 +356,12 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label>성공 지표</Label>
+        <FieldLabel
+          icon={BarChart3}
+          tooltip="프로젝트가 잘 되고 있는지 판단할 지표와 목표값을 정의합니다."
+        >
+          성공 지표
+        </FieldLabel>
         <DynamicList
           items={data.successMetrics ?? []}
           onAdd={addMetric}
@@ -327,7 +395,12 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label>일정 (마일스톤)</Label>
+        <FieldLabel
+          icon={Calendar}
+          tooltip="주요 마일스톤과 예상 시점을 정리해 전체 일정 감각을 맞춥니다."
+        >
+          일정 (마일스톤)
+        </FieldLabel>
         <DynamicList
           items={data.timeline ?? []}
           onAdd={addMilestone}
@@ -361,7 +434,12 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label>참고 자료</Label>
+        <FieldLabel
+          icon={BookOpen}
+          tooltip="레퍼런스 링크, 문서, 벤치마크 자료를 모아둡니다."
+        >
+          참고 자료
+        </FieldLabel>
         <DynamicList
           items={data.references ?? []}
           onAdd={addReference}
@@ -395,7 +473,13 @@ export function OverviewForm({ disabled = false }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ov-tech-stack">기술 스택 메모 (선택)</Label>
+        <FieldLabel
+          htmlFor="ov-tech-stack"
+          icon={Wrench}
+          tooltip="예상 기술 스택이나 구현 메모를 자유롭게 남깁니다."
+        >
+          기술 스택 메모 (선택)
+        </FieldLabel>
         <Input
           id="ov-tech-stack"
           placeholder="예: Next.js, Supabase, Tailwind CSS"

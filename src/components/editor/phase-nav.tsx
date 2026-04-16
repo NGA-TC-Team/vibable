@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import {
   FileText,
   Users,
@@ -23,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { PHASE_LABELS, type ProjectType } from "@/types/phases";
 import { useEditorStore } from "@/services/store/editor-store";
+import { useSystemRuntime } from "@/services/store/hooks";
 
 const phaseIcons = [
   FileText,
@@ -77,6 +80,9 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
   const phaseData = useEditorStore((s) => s.phaseData);
   const isSidebarCollapsed = useEditorStore((s) => s.isSidebarCollapsed);
   const toggleSidebar = useEditorStore((s) => s.toggleSidebar);
+  const { prefersReducedMotion } = useSystemRuntime();
+  const expandedItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [expandedIndicator, setExpandedIndicator] = useState({ top: 0, height: 0 });
 
   const cliLabels: Record<number, string> = {
     3: "커맨드 트리",
@@ -90,6 +96,39 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
   }, 0);
 
   const progressPercent = Math.round((completedCount / 7) * 100);
+
+  const activeTransition = useMemo(
+    () =>
+      prefersReducedMotion
+        ? { duration: 0 }
+        : { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const },
+    [prefersReducedMotion],
+  );
+
+  useEffect(() => {
+    if (isSidebarCollapsed) return;
+
+    const activeItem = expandedItemRefs.current[currentPhase];
+    if (!activeItem) return;
+
+    const updateIndicator = () => {
+      setExpandedIndicator({
+        top: activeItem.offsetTop,
+        height: activeItem.offsetHeight,
+      });
+    };
+
+    updateIndicator();
+
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(activeItem);
+    window.addEventListener("resize", updateIndicator);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateIndicator);
+    };
+  }, [currentPhase, isSidebarCollapsed, phaseData?.screenDesign?.pages?.length]);
 
   if (isSidebarCollapsed) {
     return (
@@ -111,31 +150,39 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
           />
           <span className="mb-2 text-[10px] text-muted-foreground">{completedCount}/7</span>
 
-          {Array.from({ length: 7 }).map((_, i) => {
-            const Icon = phaseIcons[i];
-            const baseLabel =
-              projectType === "cli" && cliLabels[i] ? cliLabels[i] : PHASE_LABELS[i];
-            const active = currentPhase === i;
+          <div className="relative flex flex-col items-center gap-1">
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-lg bg-primary/10 shadow-sm"
+              animate={{ y: currentPhase * 36 }}
+              transition={activeTransition}
+            />
+            {Array.from({ length: 7 }).map((_, i) => {
+              const Icon = phaseIcons[i];
+              const baseLabel =
+                projectType === "cli" && cliLabels[i] ? cliLabels[i] : PHASE_LABELS[i];
+              const active = currentPhase === i;
 
-            return (
-              <Tooltip key={i}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onPhaseChange(i)}
-                    className={cn(
-                      "flex size-8 items-center justify-center rounded-lg transition-colors",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="size-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{baseLabel}</TooltipContent>
-              </Tooltip>
-            );
-          })}
+              return (
+                <Tooltip key={i}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onPhaseChange(i)}
+                      className={cn(
+                        "relative z-10 flex size-8 items-center justify-center rounded-lg transition-colors",
+                        active
+                          ? "font-medium text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{baseLabel}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
         </nav>
       </TooltipProvider>
     );
@@ -157,42 +204,56 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
         </Button>
       </div>
 
-      {Array.from({ length: 7 }).map((_, i) => {
-        const Icon = phaseIcons[i];
-        const baseLabel =
-          projectType === "cli" && cliLabels[i]
-            ? cliLabels[i]
-            : PHASE_LABELS[i];
-        const screenCount =
-          i === 4 && phaseData?.screenDesign?.pages?.length
-            ? ` (${phaseData.screenDesign.pages.length})`
-            : "";
-        const label = `${baseLabel}${screenCount}`;
-        const dataKey = PHASE_DATA_KEYS[i];
-        const complete = phaseData
-          ? isPhaseComplete(i, phaseData[dataKey])
-          : false;
-        const active = currentPhase === i;
+      <div className="relative">
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 rounded-lg bg-primary/10 shadow-sm"
+          animate={{ top: expandedIndicator.top, height: expandedIndicator.height }}
+          initial={false}
+          transition={activeTransition}
+        />
+        <div className="relative flex flex-col gap-1">
+          {Array.from({ length: 7 }).map((_, i) => {
+            const Icon = phaseIcons[i];
+            const baseLabel =
+              projectType === "cli" && cliLabels[i]
+                ? cliLabels[i]
+                : PHASE_LABELS[i];
+            const screenCount =
+              i === 4 && phaseData?.screenDesign?.pages?.length
+                ? ` (${phaseData.screenDesign.pages.length})`
+                : "";
+            const label = `${baseLabel}${screenCount}`;
+            const dataKey = PHASE_DATA_KEYS[i];
+            const complete = phaseData
+              ? isPhaseComplete(i, phaseData[dataKey])
+              : false;
+            const active = currentPhase === i;
 
-        return (
-          <button
-            key={i}
-            onClick={() => onPhaseChange(i)}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-              active
-                ? "bg-primary/10 font-medium text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4 shrink-0" />
-            <span className="flex-1 truncate text-left">{label}</span>
-            {!complete && !active && (
-              <AlertCircle className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-            )}
-          </button>
-        );
-      })}
+            return (
+              <button
+                key={i}
+                ref={(node) => {
+                  expandedItemRefs.current[i] = node;
+                }}
+                onClick={() => onPhaseChange(i)}
+                className={cn(
+                  "relative z-10 flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                  active
+                    ? "font-medium text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="flex-1 truncate text-left">{label}</span>
+                {!complete && !active && (
+                  <AlertCircle className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </nav>
   );
 }

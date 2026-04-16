@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Printer } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, Clipboard, FileDown, FileText, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { VibableLogo } from "@/components/vibable-logo";
 import {
   ResizablePanelGroup,
@@ -19,6 +24,8 @@ import { MemoModal } from "./memo-modal";
 import { ExportButtons } from "@/components/export/export-buttons";
 import { ShareButton } from "./share-button";
 import { useEditorStore } from "@/services/store/editor-store";
+import { useExport } from "@/hooks/use-export.hook";
+import { PHASE_KEYS } from "@/types/phases";
 import type { Project } from "@/types/phases";
 
 interface EditorLayoutProps {
@@ -30,10 +37,14 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
   const isReadOnly = useEditorStore((s) => s.isReadOnly);
   const isSidebarCollapsed = useEditorStore((s) => s.isSidebarCollapsed);
   const setPrintPreview = useEditorStore((s) => s.setPrintPreview);
+  const currentPhase = useEditorStore((s) => s.currentPhase);
+  const { exportPhaseMarkdown } = useExport();
+  const currentPhaseKey = PHASE_KEYS[currentPhase];
+  const canExportMarkdown = currentPhase !== 4;
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
         <Link
           href="/workspace"
           className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
@@ -45,7 +56,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
           </span>
         </Link>
 
-        <div className="h-5 w-px bg-border" />
+        <div className="h-5 w-px shrink-0 bg-border" />
 
         <Button variant="ghost" size="sm" asChild>
           <Link href="/workspace">
@@ -70,7 +81,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className={cn("hidden shrink-0 border-r p-3 md:block transition-all", isSidebarCollapsed ? "w-14" : "w-48")}>
+        <aside className={isSidebarCollapsed ? "hidden w-14 shrink-0 border-r p-3 transition-all md:block" : "hidden w-48 shrink-0 border-r p-3 transition-all md:block"}>
           <PhaseNav
             projectType={project.type}
             onPhaseChange={onPhaseChange}
@@ -83,10 +94,46 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
               {!isReadOnly && (
                 <div className="flex items-center gap-2 border-b px-4 py-2">
                   <MemoModal />
+                  {canExportMarkdown ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 ml-auto">
+                          <FileText className="size-3.5" />
+                          마크다운 내보내기
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            exportPhaseMarkdown(
+                              project,
+                              currentPhaseKey as Exclude<typeof currentPhaseKey, "screenDesign">,
+                              "copy",
+                            )
+                          }
+                        >
+                          <Clipboard className="size-4" />
+                          클립보드로 복사
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            exportPhaseMarkdown(
+                              project,
+                              currentPhaseKey as Exclude<typeof currentPhaseKey, "screenDesign">,
+                              "download",
+                            )
+                          }
+                        >
+                          <FileDown className="size-4" />
+                          .md 파일 다운로드
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : null}
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 ml-auto"
+                    className="gap-1.5"
                     onClick={() => setPrintPreview(true)}
                   >
                     <Printer className="size-3.5" />

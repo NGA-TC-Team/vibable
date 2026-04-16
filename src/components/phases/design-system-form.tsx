@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, Search } from "lucide-react";
+import { BookOpen, CheckSquare, Plus, Search, Type, X } from "lucide-react";
+import { FieldLabel } from "@/components/editor/field-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
 import { StringList } from "@/components/editor/dynamic-list";
 import { SectionHeader } from "@/components/editor/section-header";
 import { SectionGroup } from "@/components/editor/section-group";
@@ -290,38 +291,42 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
             </Button>
           )}
         </SectionHeader>
-        {data.colorPalette.map((token, i) => (
-          <div key={i} className="flex gap-2 items-center">
-            <input
-              type="color"
-              value={token.hex}
-              onChange={(e) => updateColor(i, { hex: e.target.value })}
-              disabled={disabled}
-              className="h-9 w-9 shrink-0 cursor-pointer rounded border"
-            />
-            <Input
-              placeholder="이름 (Primary 등)"
-              value={token.name}
-              onChange={(e) => updateColor(i, { name: e.target.value })}
-              disabled={disabled}
-            />
-            <Input
-              placeholder="역할"
-              value={token.role}
-              onChange={(e) => updateColor(i, { role: e.target.value })}
-              disabled={disabled}
-            />
-            {!disabled && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => removeColor(i)}
-              >
-                <X className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        ))}
+        <AnimatedList className="space-y-2">
+          {data.colorPalette.map((token, i) => (
+            <AnimatedListItem key={`color-${i}`}>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={token.hex}
+                  onChange={(e) => updateColor(i, { hex: e.target.value })}
+                  disabled={disabled}
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded border"
+                />
+                <Input
+                  placeholder="이름 (Primary 등)"
+                  value={token.name}
+                  onChange={(e) => updateColor(i, { name: e.target.value })}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="역할"
+                  value={token.role}
+                  onChange={(e) => updateColor(i, { role: e.target.value })}
+                  disabled={disabled}
+                />
+                {!disabled && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => removeColor(i)}
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
 
       {/* § 3 Typography */}
@@ -333,8 +338,10 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
             </Button>
           )}
         </SectionHeader>
-        {data.typography.scale.map((entry, i) => (
-          <div key={i} className="grid grid-cols-4 gap-2">
+        <AnimatedList className="space-y-2">
+          {data.typography.scale.map((entry, i) => (
+            <AnimatedListItem key={`type-scale-${i}`}>
+              <div className="grid grid-cols-4 gap-2">
             <Input
               placeholder="이름"
               value={entry.name}
@@ -372,8 +379,10 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
                 </Button>
               )}
             </div>
-          </div>
-        ))}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
 
       {/* § 4 Components */}
@@ -405,8 +414,10 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
             </Popover>
           )}
         </SectionHeader>
-        {data.components.map((comp, i) => (
-          <div key={i} className="rounded-lg border p-3 space-y-3">
+        <AnimatedList className="space-y-3">
+          {data.components.map((comp, i) => (
+            <AnimatedListItem key={`component-${i}`}>
+              <div className="rounded-lg border p-3 space-y-3">
             <div className="flex gap-2">
               <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded self-center">
                 {comp.category ?? "custom"}
@@ -474,8 +485,10 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
               rows={2}
               disabled={disabled}
             />
-          </div>
-        ))}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
 
       {/* § 5 Layout */}
@@ -506,7 +519,12 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
       <section className="space-y-3">
         <SectionHeader title="§ 7. Do's and Don'ts" tooltip={SECTION_TOOLTIPS["designSystem.guidelines"]} />
         <div className="space-y-2">
-          <Label className="text-xs">Do&apos;s</Label>
+          <FieldLabel
+            icon={CheckSquare}
+            tooltip="디자인 시스템에서 반복적으로 지켜야 할 권장 패턴입니다."
+          >
+            Do&apos;s
+          </FieldLabel>
           <StringList
             items={data.guidelines.dos}
             onChange={(dos) => updateNestedField("guidelines", { dos })}
@@ -515,7 +533,12 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs">Don&apos;ts</Label>
+          <FieldLabel
+            icon={X}
+            tooltip="일관성을 해치거나 피해야 할 표현과 패턴을 정리합니다."
+          >
+            Don&apos;ts
+          </FieldLabel>
           <StringList
             items={data.guidelines.donts}
             onChange={(donts) => updateNestedField("guidelines", { donts })}
@@ -529,9 +552,12 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
       <section className="space-y-3">
         <SectionHeader title="UX 라이팅" tooltip={SECTION_TOOLTIPS["designSystem.uxWriting"]} />
         <div className="space-y-2">
-          <Label className="text-xs">
+          <FieldLabel
+            icon={Type}
+            tooltip="제품의 말투가 얼마나 격식적이거나 친근한지 슬라이더로 맞춥니다."
+          >
             톤 레벨: {toneLabels[data.uxWriting.toneLevel]}
-          </Label>
+          </FieldLabel>
           <Slider
             min={1}
             max={5}
@@ -567,38 +593,47 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">용어 사전</Label>
+            <FieldLabel
+              icon={BookOpen}
+              tooltip="권장 용어와 피해야 할 표현을 함께 관리해 문구 톤을 통일합니다."
+            >
+              용어 사전
+            </FieldLabel>
             {!disabled && (
               <Button variant="outline" size="xs" onClick={addGlossary}>
                 <Plus className="size-3" />
               </Button>
             )}
           </div>
-          {data.uxWriting.glossary.map((entry, i) => (
-            <div key={i} className="flex gap-2">
-              <Input
-                placeholder="사용 용어"
-                value={entry.term}
-                onChange={(e) => updateGlossary(i, { term: e.target.value })}
-                disabled={disabled}
-              />
-              <Input
-                placeholder="피할 표현"
-                value={entry.avoid}
-                onChange={(e) => updateGlossary(i, { avoid: e.target.value })}
-                disabled={disabled}
-              />
-              {!disabled && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => removeGlossary(i)}
-                >
-                  <X className="size-3.5" />
-                </Button>
-              )}
-            </div>
-          ))}
+          <AnimatedList className="space-y-2">
+            {data.uxWriting.glossary.map((entry, i) => (
+              <AnimatedListItem key={`glossary-${i}`}>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="사용 용어"
+                    value={entry.term}
+                    onChange={(e) => updateGlossary(i, { term: e.target.value })}
+                    disabled={disabled}
+                  />
+                  <Input
+                    placeholder="피할 표현"
+                    value={entry.avoid}
+                    onChange={(e) => updateGlossary(i, { avoid: e.target.value })}
+                    disabled={disabled}
+                  />
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removeGlossary(i)}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </AnimatedListItem>
+            ))}
+          </AnimatedList>
         </div>
       </section>
     </SectionGroup>

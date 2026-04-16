@@ -251,7 +251,10 @@ export interface EntityField {
   description?: string;
   enumValues?: string[];
   relationTarget?: string;
+  relationTargetField?: string;
   relationType?: "1:1" | "1:N" | "N:M";
+  onDelete?: "cascade" | "restrict" | "setNull" | "noAction";
+  onUpdate?: "cascade" | "restrict" | "setNull" | "noAction";
 }
 
 export interface Entity {
@@ -262,7 +265,8 @@ export interface Entity {
 
 export interface DataModelPhase {
   entities: Entity[];
-  storageStrategy: "local" | "remote" | "hybrid";
+  storageStrategy: "local" | "remote" | "hybrid" | "distributed";
+  distributedStrategy?: "primaryReplica" | "sharded" | "multiRegion";
   storageNotes?: string;
 }
 

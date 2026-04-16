@@ -25,7 +25,7 @@ export type EditorState = {
   infoArchView: InfoArchView;
   infoArchDisplayMode: InfoArchDisplayMode;
   selectedFlowId: string | null;
-  selectedMockupElementId: string | null;
+  selectedMockupElementIds: string[];
 
   setPhase: (phase: number) => void;
   togglePreview: () => void;
@@ -44,7 +44,11 @@ export type EditorState = {
   setPrintPreviewPage: (page: number) => void;
   setActiveScreenPageId: (id: string | null) => void;
   setActiveScreenState: (state: ScreenState) => void;
-  setSelectedMockupElementId: (id: string | null) => void;
+  setSelectedMockupElementIds: (ids: string[]) => void;
+  setSingleSelectedMockupElementId: (id: string | null) => void;
+  toggleSelectedMockupElementId: (id: string) => void;
+  clearSelectedMockupElements: () => void;
+  removeSelectedMockupElementIds: (ids: string[]) => void;
   reset: () => void;
 };
 
@@ -65,7 +69,7 @@ const initialState = {
   infoArchView: "sitemap" as InfoArchView,
   infoArchDisplayMode: "diagram" as InfoArchDisplayMode,
   selectedFlowId: null as string | null,
-  selectedMockupElementId: null as string | null,
+  selectedMockupElementIds: [] as string[],
 };
 
 const devEnabled = process.env.NODE_ENV === "development";
@@ -99,8 +103,23 @@ export const useEditorStore = create<EditorState>()(
         set({ activeScreenPageId }),
       setActiveScreenState: (activeScreenState) =>
         set({ activeScreenState }),
-      setSelectedMockupElementId: (selectedMockupElementId) =>
-        set({ selectedMockupElementId }),
+      setSelectedMockupElementIds: (selectedMockupElementIds) =>
+        set({ selectedMockupElementIds }),
+      setSingleSelectedMockupElementId: (id) =>
+        set({ selectedMockupElementIds: id ? [id] : [] }),
+      toggleSelectedMockupElementId: (id) =>
+        set((s) => ({
+          selectedMockupElementIds: s.selectedMockupElementIds.includes(id)
+            ? s.selectedMockupElementIds.filter((item) => item !== id)
+            : [...s.selectedMockupElementIds, id],
+        })),
+      clearSelectedMockupElements: () => set({ selectedMockupElementIds: [] }),
+      removeSelectedMockupElementIds: (ids) =>
+        set((s) => ({
+          selectedMockupElementIds: s.selectedMockupElementIds.filter(
+            (item) => !ids.includes(item),
+          ),
+        })),
       reset: () => set({ ...initialState }),
     }),
     { name: "vibable:editor", enabled: devEnabled },

@@ -3,6 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
 
 interface DynamicListProps<T> {
   items: T[];
@@ -28,21 +29,25 @@ export function DynamicList<T>({
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       )}
-      {items.map((item, i) => (
-        <div key={i} className="flex gap-2">
-          <div className="flex-1">{renderItem(item, i)}</div>
-          {!disabled && (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => onRemove(i)}
-              className="mt-1 shrink-0 hover:border-destructive/40 hover:text-destructive"
-            >
-              <Trash2 className="size-3.5 text-muted-foreground transition-colors group-hover/button:text-destructive" />
-            </Button>
-          )}
-        </div>
-      ))}
+      <AnimatedList className="space-y-2">
+        {items.map((item, i) => (
+          <AnimatedListItem key={i}>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">{renderItem(item, i)}</div>
+              {!disabled && (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onRemove(i)}
+                  className="shrink-0 self-center hover:border-destructive/40 hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5 text-muted-foreground transition-colors group-hover/button:text-destructive" />
+                </Button>
+              )}
+            </div>
+          </AnimatedListItem>
+        ))}
+      </AnimatedList>
       {!disabled && (
         <Button variant="outline" size="xs" onClick={onAdd}>
           <Plus className="size-3.5" />

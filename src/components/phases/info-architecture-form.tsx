@@ -21,6 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
 import { StringList } from "@/components/editor/dynamic-list";
 import { SectionHeader } from "@/components/editor/section-header";
 import { SectionGroup } from "@/components/editor/section-group";
@@ -130,18 +131,21 @@ function SitemapNodeEditor({
           </Button>
         )}
       </div>
-      {node.children.map((child, ci) => (
-        <SitemapNodeEditor
-          key={child.id}
-          node={child}
-          path={[...path, ci]}
-          depth={depth + 1}
-          disabled={disabled}
-          onUpdate={onUpdate}
-          onAddChild={onAddChild}
-          onRemove={onRemove}
-        />
-      ))}
+      <AnimatedList className="space-y-1">
+        {node.children.map((child, ci) => (
+          <AnimatedListItem key={child.id}>
+            <SitemapNodeEditor
+              node={child}
+              path={[...path, ci]}
+              depth={depth + 1}
+              disabled={disabled}
+              onUpdate={onUpdate}
+              onAddChild={onAddChild}
+              onRemove={onRemove}
+            />
+          </AnimatedListItem>
+        ))}
+      </AnimatedList>
       {!disabled && depth < MAX_SITEMAP_DEPTH - 1 && (
         <Button
           variant="outline"
@@ -237,17 +241,20 @@ function SortableFlowItem({
           items={flow.steps.map((s) => s.id)}
           strategy={verticalListSortingStrategy}
         >
-          {flow.steps.map((step, si) => (
-            <SortableStepItem
-              key={step.id}
-              step={step}
-              stepIndex={si}
-              flowIndex={flowIndex}
-              disabled={disabled}
-              onUpdateStep={onUpdateStep}
-              onRemoveStep={onRemoveStep}
-            />
-          ))}
+          <AnimatedList className="space-y-2">
+            {flow.steps.map((step, si) => (
+              <AnimatedListItem key={step.id}>
+                <SortableStepItem
+                  step={step}
+                  stepIndex={si}
+                  flowIndex={flowIndex}
+                  disabled={disabled}
+                  onUpdateStep={onUpdateStep}
+                  onRemoveStep={onRemoveStep}
+                />
+              </AnimatedListItem>
+            ))}
+          </AnimatedList>
         </SortableContext>
       </DndContext>
       {!disabled && (
@@ -452,19 +459,23 @@ export function InfoArchitectureForm({
             </Button>
           )}
         </SectionHeader>
-        {data.sitemap.map((node, i) => (
-          <div key={node.id} className="rounded-lg border p-3 space-y-1">
-            <SitemapNodeEditor
-              node={node}
-              path={[i]}
-              depth={0}
-              disabled={disabled}
-              onUpdate={handleUpdateNode}
-              onAddChild={handleAddChild}
-              onRemove={handleRemoveNode}
-            />
-          </div>
-        ))}
+        <AnimatedList className="space-y-3">
+          {data.sitemap.map((node, i) => (
+            <AnimatedListItem key={node.id}>
+              <div className="space-y-1 rounded-lg border p-3">
+                <SitemapNodeEditor
+                  node={node}
+                  path={[i]}
+                  depth={0}
+                  disabled={disabled}
+                  onUpdate={handleUpdateNode}
+                  onAddChild={handleAddChild}
+                  onRemove={handleRemoveNode}
+                />
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
 
       {/* User Flows — DnD 정렬 */}
@@ -486,20 +497,23 @@ export function InfoArchitectureForm({
             items={data.userFlows.map((f) => f.id)}
             strategy={verticalListSortingStrategy}
           >
-            {data.userFlows.map((flow, fi) => (
-              <SortableFlowItem
-                key={flow.id}
-                flow={flow}
-                flowIndex={fi}
-                disabled={disabled}
-                onUpdate={updateFlow}
-                onRemove={removeFlow}
-                onAddStep={addStep}
-                onUpdateStep={updateStep}
-                onRemoveStep={removeStep}
-                onStepReorder={handleStepReorder}
-              />
-            ))}
+            <AnimatedList className="space-y-3">
+              {data.userFlows.map((flow, fi) => (
+                <AnimatedListItem key={flow.id}>
+                  <SortableFlowItem
+                    flow={flow}
+                    flowIndex={fi}
+                    disabled={disabled}
+                    onUpdate={updateFlow}
+                    onRemove={removeFlow}
+                    onAddStep={addStep}
+                    onUpdateStep={updateStep}
+                    onRemoveStep={removeStep}
+                    onStepReorder={handleStepReorder}
+                  />
+                </AnimatedListItem>
+              ))}
+            </AnimatedList>
           </SortableContext>
         </DndContext>
       </section>

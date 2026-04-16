@@ -1,10 +1,21 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import {
+  Building2,
+  Layers3,
+  Link2,
+  MousePointer,
+  Plus,
+  Table2,
+  Target,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { ELEMENT_LABELS } from "@/components/preview/mockup/mockup-element";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
+import { FieldLabel } from "@/components/editor/field-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -165,7 +176,16 @@ function PageReferenceList({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-xs">{label}</Label>
+        <FieldLabel
+          icon={Link2}
+          tooltip={
+            label.includes("In")
+              ? "현재 화면으로 유입되는 연결 화면을 관리합니다."
+              : "현재 화면에서 이동할 수 있는 연결 화면을 관리합니다."
+          }
+        >
+          {label}
+        </FieldLabel>
         {!disabled && (
           <Button
             variant="outline"
@@ -183,47 +203,51 @@ function PageReferenceList({
         <p className="pl-1 text-xs text-muted-foreground">연결된 화면이 없습니다.</p>
       ) : null}
 
-      {items.map((item, index) => {
-        const selectablePages = candidates.filter(
-          (candidate) =>
-            candidate.id === item || !items.some((value, valueIndex) => valueIndex !== index && value === candidate.id),
-        );
+      <AnimatedList className="space-y-2">
+        {items.map((item, index) => {
+          const selectablePages = candidates.filter(
+            (candidate) =>
+              candidate.id === item || !items.some((value, valueIndex) => valueIndex !== index && value === candidate.id),
+          );
 
-        return (
-          <div key={`${label}-${index}-${item}`} className="flex gap-2">
-            <Select
-              value={item || undefined}
-              onValueChange={(value) => {
-                const nextItems = [...items];
-                nextItems[index] = value;
-                onChange(nextItems);
-              }}
-              disabled={disabled}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="화면 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {selectablePages.map((page) => (
-                  <SelectItem key={page.id} value={page.id}>
-                    {getPageLabel(page)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {!disabled && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
-                className="hover:border-destructive/40 hover:text-destructive"
-              >
-                <X className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        );
-      })}
+          return (
+            <AnimatedListItem key={`${label}-${index}-${item}`}>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={item || undefined}
+                  onValueChange={(value) => {
+                    const nextItems = [...items];
+                    nextItems[index] = value;
+                    onChange(nextItems);
+                  }}
+                  disabled={disabled}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="화면 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectablePages.map((page) => (
+                      <SelectItem key={page.id} value={page.id}>
+                        {getPageLabel(page)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!disabled && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
+                    className="hover:border-destructive/40 hover:text-destructive"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            </AnimatedListItem>
+          );
+        })}
+      </AnimatedList>
     </div>
   );
 }
@@ -294,7 +318,12 @@ function ScreenPageEditor({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">핵심 엔티티</Label>
+        <FieldLabel
+          icon={Table2}
+          tooltip="이 화면이 직접 다루는 주요 데이터 엔티티를 연결합니다."
+        >
+          핵심 엔티티
+        </FieldLabel>
         {entityOptions.length === 0 ? (
           <p className="pl-1 text-xs text-muted-foreground">
             데이터 모델 단계에서 엔티티를 만들면 여기서 참조할 수 있습니다.
@@ -327,7 +356,12 @@ function ScreenPageEditor({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">유저 목표</Label>
+          <FieldLabel
+            icon={Target}
+            tooltip="사용자가 이 화면에서 달성하려는 핵심 목적입니다."
+          >
+            유저 목표
+          </FieldLabel>
           <Textarea
             placeholder="유저가 이 화면에서 달성하려는 것"
             value={page.uxIntent.userGoal}
@@ -341,7 +375,12 @@ function ScreenPageEditor({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">비즈니스 의도</Label>
+          <FieldLabel
+            icon={Building2}
+            tooltip="비즈니스 관점에서 이 화면이 수행해야 하는 역할을 적습니다."
+          >
+            비즈니스 의도
+          </FieldLabel>
           <Textarea
             placeholder="비즈니스 측면에서의 의도"
             value={page.uxIntent.businessIntent}
@@ -357,7 +396,12 @@ function ScreenPageEditor({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">상태별 UI</Label>
+        <FieldLabel
+          icon={Layers3}
+          tooltip="Idle, Loading, Offline 등 상태별로 어떻게 달라지는지 요약합니다."
+        >
+          상태별 UI
+        </FieldLabel>
         <Input
           placeholder="Idle 상태"
           value={page.states.idle}
@@ -380,7 +424,12 @@ function ScreenPageEditor({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">에러 상태</Label>
+          <FieldLabel
+            icon={TriangleAlert}
+            tooltip="이 화면에서 고려해야 할 에러 유형과 대응 문구를 정리합니다."
+          >
+            에러 상태
+          </FieldLabel>
           {!disabled && (
             <Button variant="outline" size="xs" onClick={() => addError(pi)}>
               <Plus className="size-3" />
@@ -388,45 +437,54 @@ function ScreenPageEditor({
             </Button>
           )}
         </div>
-        {page.states.errors.map((err, ei) => (
-          <div key={ei} className="flex gap-2">
-            <Select
-              value={err.type}
-              onValueChange={(v) => updateError(pi, ei, { type: v as ErrorState["type"] })}
-              disabled={disabled}
-            >
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(errorTypes).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="설명"
-              value={err.description}
-              onChange={(e) => updateError(pi, ei, { description: e.target.value })}
-              disabled={disabled}
-            />
-            {!disabled && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => removeError(pi, ei)}
-                className="hover:border-destructive/40 hover:text-destructive"
-              >
-                <X className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        ))}
+        <AnimatedList className="space-y-2">
+          {page.states.errors.map((err, ei) => (
+            <AnimatedListItem key={`${page.id}-error-${ei}`}>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={err.type}
+                  onValueChange={(v) => updateError(pi, ei, { type: v as ErrorState["type"] })}
+                  disabled={disabled}
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(errorTypes).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="설명"
+                  value={err.description}
+                  onChange={(e) => updateError(pi, ei, { description: e.target.value })}
+                  disabled={disabled}
+                />
+                {!disabled && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => removeError(pi, ei)}
+                    className="hover:border-destructive/40 hover:text-destructive"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">인터랙션</Label>
+          <FieldLabel
+            icon={MousePointer}
+            tooltip="UI 요소별 트리거와 액션을 연결해 화면 동작을 정의합니다."
+          >
+            인터랙션
+          </FieldLabel>
           {!disabled && (
             <Button variant="outline" size="xs" onClick={() => addInteraction(pi)}>
               <Plus className="size-3" />
@@ -439,90 +497,93 @@ function ScreenPageEditor({
             목업에 UI 요소를 추가하면 여기서 인터랙션 대상으로 선택할 수 있습니다.
           </p>
         ) : null}
-        {page.interactions.map((int, ii) => (
-          <div
-            key={ii}
-            className="grid gap-2 rounded-xl border border-border/60 p-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_auto]"
-          >
-            <Select
-              value={int.elementId || undefined}
-              onValueChange={(value) => updateInteraction(pi, ii, { elementId: value })}
-              disabled={disabled || elementOptions.length === 0}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="UI 요소 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {elementOptions.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={int.trigger || undefined}
-              onValueChange={(value) => updateInteraction(pi, ii, { trigger: value })}
-              disabled={disabled}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="트리거 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {triggerOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="space-y-2">
-              <Select
-                value={int.actionKind || undefined}
-                onValueChange={(value) =>
-                  updateInteraction(pi, ii, {
-                    actionKind: value,
-                    actionCustom: value === "other" ? int.actionCustom ?? "" : undefined,
-                  })
-                }
-                disabled={disabled}
+        <AnimatedList className="space-y-2">
+          {page.interactions.map((int, ii) => (
+            <AnimatedListItem key={`${page.id}-interaction-${ii}`}>
+              <div
+                className="grid gap-2 rounded-xl border border-border/60 p-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_auto]"
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="액션 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  {actionOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {int.actionKind === "other" ? (
-                <Input
-                  placeholder="기타 액션을 입력하세요"
-                  value={int.actionCustom ?? ""}
-                  onChange={(e) =>
-                    updateInteraction(pi, ii, { actionCustom: e.target.value })
-                  }
-                  disabled={disabled}
-                />
-              ) : null}
-            </div>
-            <div className="flex justify-end">
-              {!disabled && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => removeInteraction(pi, ii)}
-                  className="hover:border-destructive/40 hover:text-destructive"
+                <Select
+                  value={int.elementId || undefined}
+                  onValueChange={(value) => updateInteraction(pi, ii, { elementId: value })}
+                  disabled={disabled || elementOptions.length === 0}
                 >
-                  <X className="size-3.5" />
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="UI 요소 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {elementOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={int.trigger || undefined}
+                  onValueChange={(value) => updateInteraction(pi, ii, { trigger: value })}
+                  disabled={disabled}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="트리거 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {triggerOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-2">
+                  <Select
+                    value={int.actionKind || undefined}
+                    onValueChange={(value) =>
+                      updateInteraction(pi, ii, {
+                        actionKind: value,
+                        actionCustom: value === "other" ? int.actionCustom ?? "" : undefined,
+                      })
+                    }
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="액션 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {actionOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {int.actionKind === "other" ? (
+                    <Input
+                      placeholder="기타 액션을 입력하세요"
+                      value={int.actionCustom ?? ""}
+                      onChange={(e) =>
+                        updateInteraction(pi, ii, { actionCustom: e.target.value })
+                      }
+                      disabled={disabled}
+                    />
+                  ) : null}
+                </div>
+                <div className="flex items-center justify-end">
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removeInteraction(pi, ii)}
+                      className="hover:border-destructive/40 hover:text-destructive"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </div>
 
       <PageReferenceList

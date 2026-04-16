@@ -8,27 +8,36 @@ import { FlowDiagram } from "./flow-diagram";
 type SitemapNodeData = {
   label: string;
   path?: string;
+  depth: number;
   isRoot: boolean;
   isLeaf: boolean;
 };
+
+const DEPTH_TONES = [
+  "border-primary bg-primary text-primary-foreground",
+  "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900/70 dark:bg-sky-950/40 dark:text-sky-100",
+  "border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-900/70 dark:bg-violet-950/40 dark:text-violet-100",
+  "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-100",
+  "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-100",
+] as const;
 
 const SitemapNodeComponent = memo(function SitemapNodeComponent({
   data,
 }: NodeProps<Node<SitemapNodeData>>) {
   const bgClass = data.isRoot
-    ? "bg-primary text-primary-foreground"
+    ? DEPTH_TONES[0]
     : data.isLeaf
-      ? "bg-muted text-muted-foreground"
-      : "bg-card text-card-foreground border";
+      ? "border-border bg-muted/70 text-muted-foreground"
+      : DEPTH_TONES[Math.min(data.depth, DEPTH_TONES.length - 1)];
 
   return (
-    <div className={`rounded-lg px-4 py-2 text-center shadow-sm ${bgClass}`}>
-      <Handle type="target" position={Position.Top} className="!invisible" />
+    <div className={`rounded-lg border px-4 py-2 text-center shadow-sm ${bgClass}`}>
+      <Handle type="target" position={Position.Top} className="invisible!" />
       <div className="text-sm font-medium">{data.label}</div>
       {data.path && (
         <div className="text-xs opacity-70">{data.path}</div>
       )}
-      <Handle type="source" position={Position.Bottom} className="!invisible" />
+      <Handle type="source" position={Position.Bottom} className="invisible!" />
     </div>
   );
 });
@@ -51,6 +60,7 @@ function flatten(
       data: {
         label: node.label || "이름 없음",
         path: node.path,
+        depth,
         isRoot: depth === 0,
         isLeaf,
       },
@@ -63,6 +73,10 @@ function flatten(
         source: parentId,
         target: node.id,
         type: "smoothstep",
+        animated: true,
+        style: {
+          strokeDasharray: "6 3",
+        },
       });
     }
 

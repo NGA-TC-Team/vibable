@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
+import { FieldLabel } from "@/components/editor/field-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -150,8 +158,10 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
             className="pl-11!"
           />
         </div>
-        {paginatedFunctional.map(({ req, originalIndex }) => (
-          <div key={req.id} className="rounded-lg border p-3 space-y-2">
+        <AnimatedList className="space-y-3">
+          {paginatedFunctional.map(({ req, originalIndex }) => (
+            <AnimatedListItem key={req.id}>
+              <div className="rounded-lg border p-3 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <span className="mt-2 text-xs font-mono text-muted-foreground">
                 {req.id}
@@ -202,7 +212,12 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
               disabled={disabled}
             />
             <div className="space-y-1">
-              <Label className="text-xs">수용 기준</Label>
+              <FieldLabel
+                icon={CheckSquare}
+                tooltip="요구사항이 충족되었다고 판단할 수 있는 구체적인 기준 목록입니다."
+              >
+                수용 기준
+              </FieldLabel>
               <StringList
                 items={req.acceptanceCriteria}
                 onChange={(acceptanceCriteria) =>
@@ -212,8 +227,10 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
                 disabled={disabled}
               />
             </div>
-          </div>
-        ))}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
         {totalFuncPages > 1 && (
           <div className="flex items-center justify-center gap-1 pt-2">
             <Button
@@ -264,8 +281,10 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
             className="pl-11!"
           />
         </div>
-        {filteredNonFunctional.map(({ req, originalIndex }) => (
-          <div key={req.id} className="flex gap-2 items-start">
+        <AnimatedList className="space-y-2">
+          {filteredNonFunctional.map(({ req, originalIndex }) => (
+            <AnimatedListItem key={req.id}>
+              <div className="flex gap-2 items-start">
             <span className="mt-2 text-xs font-mono text-muted-foreground shrink-0">
               {req.id}
             </span>
@@ -307,8 +326,10 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
                 <X className="size-3.5" />
               </Button>
             )}
-          </div>
-        ))}
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
     </SectionGroup>
   );

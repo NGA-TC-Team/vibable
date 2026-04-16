@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { stripMemos } from "@/lib/strip-memos";
 import { generateDesignMd } from "@/components/export/design-md-generator";
+import { generatePhaseMarkdown } from "@/components/export/phase-md-generator";
 import { APP_VERSION, SCHEMA_VERSION } from "@/lib/constants";
 import { PHASE_KEYS, type Project, type PhaseKey } from "@/types/phases";
 import { downloadBlob } from "@/lib/download";
@@ -64,5 +65,28 @@ export function useExport() {
     }
   };
 
-  return { exportJson, exportDesignMd, exportPdf };
+  const exportPhaseMarkdown = async (
+    project: Project,
+    phaseKey: Exclude<PhaseKey, "screenDesign">,
+    mode: "copy" | "download",
+  ) => {
+    const markdown = generatePhaseMarkdown(project.name, project.phases, phaseKey);
+
+    if (mode === "copy") {
+      try {
+        await navigator.clipboard.writeText(markdown);
+        toast.success("마크다운이 클립보드에 복사되었습니다");
+      } catch (err) {
+        console.error("Markdown copy failed:", err);
+        toast.error("마크다운 복사에 실패했습니다");
+      }
+      return;
+    }
+
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    downloadBlob(blob, `${project.name}_${phaseKey}_${timestamp()}.md`);
+    toast.success("마크다운 파일이 다운로드되었습니다");
+  };
+
+  return { exportJson, exportDesignMd, exportPdf, exportPhaseMarkdown };
 }

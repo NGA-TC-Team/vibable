@@ -9,7 +9,10 @@ export const entityFieldSchema = z.object({
   description: z.string().optional().default(""),
   enumValues: z.array(z.string()).optional(),
   relationTarget: z.string().optional(),
+  relationTargetField: z.string().optional(),
   relationType: z.enum(["1:1", "1:N", "N:M"]).optional(),
+  onDelete: z.enum(["cascade", "restrict", "setNull", "noAction"]).optional(),
+  onUpdate: z.enum(["cascade", "restrict", "setNull", "noAction"]).optional(),
 });
 
 export const entitySchema = z.object({
@@ -20,7 +23,12 @@ export const entitySchema = z.object({
 
 export const dataModelSchema = z.object({
   entities: z.array(entitySchema).default([]),
-  storageStrategy: z.enum(["local", "remote", "hybrid"]).default("local"),
+  storageStrategy: z
+    .enum(["local", "remote", "hybrid", "distributed"])
+    .default("local"),
+  distributedStrategy: z
+    .enum(["primaryReplica", "sharded", "multiRegion"])
+    .optional(),
   storageNotes: z.string().optional().default(""),
 });
 

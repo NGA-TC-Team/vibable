@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { Plus, Target, TriangleAlert, X } from "lucide-react";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
+import { FieldLabel } from "@/components/editor/field-label";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -76,54 +77,68 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
             </Button>
           )}
         </SectionHeader>
-        {data.personas.map((persona, i) => (
-          <div key={persona.id} className="rounded-lg border p-3 space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="grid flex-1 grid-cols-2 gap-2">
-                <Input
-                  placeholder="이름"
-                  value={persona.name}
-                  onChange={(e) => updatePersona(i, { name: e.target.value })}
-                  disabled={disabled}
-                />
-                <Input
-                  placeholder="역할"
-                  value={persona.role}
-                  onChange={(e) => updatePersona(i, { role: e.target.value })}
-                  disabled={disabled}
-                />
+        <AnimatedList className="space-y-3">
+          {data.personas.map((persona, i) => (
+            <AnimatedListItem key={persona.id}>
+              <div className="space-y-3 rounded-lg border p-3">
+                <div className="flex items-start justify-between">
+                  <div className="grid flex-1 grid-cols-2 gap-2">
+                    <Input
+                      placeholder="이름"
+                      value={persona.name}
+                      onChange={(e) => updatePersona(i, { name: e.target.value })}
+                      disabled={disabled}
+                    />
+                    <Input
+                      placeholder="역할"
+                      value={persona.role}
+                      onChange={(e) => updatePersona(i, { role: e.target.value })}
+                      disabled={disabled}
+                    />
+                  </div>
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removePersona(i)}
+                      className="ml-2"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <FieldLabel
+                    icon={TriangleAlert}
+                    tooltip="페르소나가 현재 겪고 있는 불편, 장애물, 불만 요소를 적습니다."
+                  >
+                    페인 포인트
+                  </FieldLabel>
+                  <StringList
+                    items={persona.painPoints}
+                    onChange={(painPoints) => updatePersona(i, { painPoints })}
+                    placeholder="페인 포인트"
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <FieldLabel
+                    icon={Target}
+                    tooltip="페르소나가 서비스로 달성하고 싶은 핵심 목표를 정리합니다."
+                  >
+                    목표
+                  </FieldLabel>
+                  <StringList
+                    items={persona.goals}
+                    onChange={(goals) => updatePersona(i, { goals })}
+                    placeholder="목표"
+                    disabled={disabled}
+                  />
+                </div>
               </div>
-              {!disabled && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => removePersona(i)}
-                  className="ml-2"
-                >
-                  <X className="size-3.5" />
-                </Button>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">페인 포인트</Label>
-              <StringList
-                items={persona.painPoints}
-                onChange={(painPoints) => updatePersona(i, { painPoints })}
-                placeholder="페인 포인트"
-                disabled={disabled}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">목표</Label>
-              <StringList
-                items={persona.goals}
-                onChange={(goals) => updatePersona(i, { goals })}
-                placeholder="목표"
-                disabled={disabled}
-              />
-            </div>
-          </div>
-        ))}
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
 
       {/* User Stories */}
@@ -136,55 +151,59 @@ export function UserScenarioForm({ disabled = false }: { disabled?: boolean }) {
             </Button>
           )}
         </SectionHeader>
-        {data.userStories.map((story, i) => (
-          <div key={story.id} className="rounded-lg border p-3 space-y-2">
-            <div className="flex items-start justify-between">
-              <Select
-                value={story.personaId}
-                onValueChange={(v) => updateStory(i, { personaId: v })}
-                disabled={disabled}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="페르소나" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data.personas.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name || "이름 없음"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!disabled && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => removeStory(i)}
-                >
-                  <X className="size-3.5" />
-                </Button>
-              )}
-            </div>
-            <Input
-              placeholder="As a (역할로서)"
-              value={story.asA}
-              onChange={(e) => updateStory(i, { asA: e.target.value })}
-              disabled={disabled}
-            />
-            <Input
-              placeholder="I want (원하는 것)"
-              value={story.iWant}
-              onChange={(e) => updateStory(i, { iWant: e.target.value })}
-              disabled={disabled}
-            />
-            <Input
-              placeholder="So that (달성하고 싶은 것)"
-              value={story.soThat}
-              onChange={(e) => updateStory(i, { soThat: e.target.value })}
-              disabled={disabled}
-            />
-          </div>
-        ))}
+        <AnimatedList className="space-y-3">
+          {data.userStories.map((story, i) => (
+            <AnimatedListItem key={story.id}>
+              <div className="space-y-2 rounded-lg border p-3">
+                <div className="flex items-start justify-between">
+                  <Select
+                    value={story.personaId}
+                    onValueChange={(v) => updateStory(i, { personaId: v })}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="페르소나" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {data.personas.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name || "이름 없음"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!disabled && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removeStory(i)}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+                <Input
+                  placeholder="As a (역할로서)"
+                  value={story.asA}
+                  onChange={(e) => updateStory(i, { asA: e.target.value })}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="I want (원하는 것)"
+                  value={story.iWant}
+                  onChange={(e) => updateStory(i, { iWant: e.target.value })}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="So that (달성하고 싶은 것)"
+                  value={story.soThat}
+                  onChange={(e) => updateStory(i, { soThat: e.target.value })}
+                  disabled={disabled}
+                />
+              </div>
+            </AnimatedListItem>
+          ))}
+        </AnimatedList>
       </section>
 
       {/* Scenarios */}

@@ -68,7 +68,10 @@ const screenToEntityExample = {
           required: true,
           description: "작성자 참조",
           relationTarget: "User",
+          relationTargetField: "id",
           relationType: "1:N",
+          onDelete: "restrict",
+          onUpdate: "cascade",
         },
         {
           name: "published",
@@ -97,7 +100,10 @@ const relationDesignExample = {
           required: true,
           description: "워크스페이스 소유자",
           relationTarget: "User",
+          relationTargetField: "id",
           relationType: "1:N",
+          onDelete: "restrict",
+          onUpdate: "cascade",
         },
       ],
     },
@@ -111,7 +117,10 @@ const relationDesignExample = {
           required: true,
           description: "소속 워크스페이스",
           relationTarget: "Workspace",
+          relationTargetField: "id",
           relationType: "1:N",
+          onDelete: "cascade",
+          onUpdate: "cascade",
         },
         {
           name: "userId",
@@ -119,7 +128,10 @@ const relationDesignExample = {
           required: true,
           description: "참여 사용자",
           relationTarget: "User",
+          relationTargetField: "id",
           relationType: "1:N",
+          onDelete: "cascade",
+          onUpdate: "cascade",
         },
         {
           name: "role",
@@ -147,7 +159,10 @@ const relationDesignExample = {
           required: true,
           description: "소속 워크스페이스",
           relationTarget: "Workspace",
+          relationTargetField: "id",
           relationType: "1:N",
+          onDelete: "cascade",
+          onUpdate: "cascade",
         },
         { name: "name", type: "string", required: true, description: "프로젝트 이름" },
         {
@@ -198,16 +213,20 @@ const storageStrategyExample = {
           required: true,
           description: "연결된 노트",
           relationTarget: "Note",
+          relationTargetField: "id",
           relationType: "1:N",
+          onDelete: "cascade",
+          onUpdate: "cascade",
         },
         { name: "fileUrl", type: "string", required: true, description: "파일 접근 URL" },
         { name: "fileSize", type: "number", required: true, description: "파일 크기(byte)" },
       ],
     },
   ],
-  storageStrategy: "hybrid",
+  storageStrategy: "distributed",
+  distributedStrategy: "primaryReplica",
   storageNotes:
-    "로컬 캐시를 우선 사용하고 온라인 복귀 시 원격 저장소와 동기화한다. 충돌 발생 시 최근 수정본 기준으로 병합한다.",
+    "쓰기 트래픽은 primary에 집중하고 읽기 요청은 replica로 분산한다. 파일 자산은 별도 오브젝트 스토리지로 분리한다.",
 };
 
 export const dataModelTemplates: PhaseTemplate[] = [
@@ -223,8 +242,10 @@ export const dataModelTemplates: PhaseTemplate[] = [
       inputFields: ['화면 명세: "{screenDesign}"'],
       outputRules: [
         'fields.type은 "string" | "number" | "boolean" | "date" | "enum" | "relation" 중 하나만 사용해.',
-        "enum 타입이면 enumValues를 채우고, relation 타입이면 relationTarget과 relationType을 함께 채워.",
-        'storageStrategy는 "local" | "remote" | "hybrid" 중 하나만 사용해.',
+        "enum 타입이면 enumValues를 채우고, relation 타입이면 relationTarget, relationTargetField, relationType을 함께 채워.",
+        "relation 타입이면 가능하면 onDelete와 onUpdate도 함께 제안해.",
+        'storageStrategy는 "local" | "remote" | "hybrid" | "distributed" 중 하나만 사용해.',
+        'storageStrategy가 "distributed"면 distributedStrategy도 함께 채워.',
       ],
       exampleInput: [
         '화면 명세: "로그인 화면, 사용자 프로필 화면, 게시글 작성 화면, 게시글 목록 화면"',
@@ -244,6 +265,7 @@ export const dataModelTemplates: PhaseTemplate[] = [
       inputFields: ['엔티티 목록: "{entityList}"'],
       outputRules: [
         'relationType은 "1:1" | "1:N" | "N:M" 중 하나만 사용해.',
+        "relation 필드에는 relationTargetField, onDelete, onUpdate까지 가능한 범위에서 채워.",
         "N:M 관계가 필요하면 조인 엔티티를 새로 추가해.",
         "storageNotes에는 왜 그런 관계 구조를 택했는지 요약해.",
       ],
@@ -257,7 +279,7 @@ export const dataModelTemplates: PhaseTemplate[] = [
     id: "storage-strategy",
     name: "저장 전략 결정",
     description:
-      "서비스 특성에 맞는 저장 전략(local/remote/hybrid)을 결정합니다.",
+      "서비스 특성에 맞는 저장 전략(local/remote/hybrid/distributed)을 결정합니다.",
     promptTemplate: buildPromptTemplate({
       role: "제품 특성에 맞는 저장 전략을 설계하는 앱 아키텍트",
       objective:
@@ -269,8 +291,9 @@ export const dataModelTemplates: PhaseTemplate[] = [
         "데이터 규모: {dataScale}",
       ],
       outputRules: [
-        'storageStrategy는 local, remote, hybrid 중 하나만 사용해.',
-        "storageNotes에는 로컬 우선인지 원격 우선인지, 동기화 방식이 무엇인지 적어.",
+        'storageStrategy는 local, remote, hybrid, distributed 중 하나만 사용해.',
+        'storageStrategy가 distributed라면 distributedStrategy도 함께 지정해.',
+        "storageNotes에는 로컬 우선인지 원격 우선인지, 동기화 또는 분산 방식이 무엇인지 적어.",
         "엔티티는 전략 판단에 필요한 핵심 데이터만 제안해도 충분해.",
       ],
       exampleInput: [

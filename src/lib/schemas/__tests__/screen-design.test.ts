@@ -65,4 +65,62 @@ describe("screenDesignSchema", () => {
       actionCustom: undefined,
     });
   });
+
+  it("preserves nested mockup metadata through JSON roundtrip", () => {
+    const original = screenDesignSchema.parse({
+      pages: [
+        {
+          id: "page-1",
+          mockupByState: {
+            idle: {
+              mobile: [
+                {
+                  id: "layout-1",
+                  type: "grid",
+                  x: 10,
+                  y: 20,
+                  width: 320,
+                  height: 240,
+                  props: { columns: "2" },
+                  children: ["child-1"],
+                },
+                {
+                  id: "child-1",
+                  type: "button",
+                  x: 0,
+                  y: 0,
+                  width: 120,
+                  height: 36,
+                  props: { text: "저장" },
+                  designNoteByContext: {
+                    "idle:mobile": {
+                      mode: "custom",
+                      note: "모바일 저장 버튼",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+
+    const roundtripped = screenDesignSchema.parse(
+      JSON.parse(JSON.stringify(original)),
+    );
+
+    expect(roundtripped).toEqual(original);
+    expect(roundtripped.pages[0]?.mockupByState?.idle.mobile[0]?.children).toEqual([
+      "child-1",
+    ]);
+    expect(
+      roundtripped.pages[0]?.mockupByState?.idle.mobile[1]?.designNoteByContext?.[
+        "idle:mobile"
+      ],
+    ).toEqual({
+      mode: "custom",
+      note: "모바일 저장 버튼",
+    });
+  });
 });

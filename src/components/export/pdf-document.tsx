@@ -10,7 +10,6 @@ import {
   View,
 } from "@react-pdf/renderer";
 import { PHASE_LABELS, type Project } from "@/types/phases";
-import { stripMemos } from "@/lib/strip-memos";
 
 Font.register({
   family: "NotoSansKR",
@@ -677,7 +676,13 @@ function DataModelPage({ project }: { project: Project }) {
       <PageHeader projectName={project.name} phaseName={PHASE_LABELS[5]} />
       <Text style={s.sectionTitle}>데이터 모델</Text>
 
-      <Text style={s.paragraph}>저장 전략: {d.storageStrategy}{d.storageNotes ? ` — ${d.storageNotes}` : ""}</Text>
+      <Text style={s.paragraph}>
+        저장 전략: {d.storageStrategy}
+        {d.storageStrategy === "distributed" && d.distributedStrategy
+          ? ` (${d.distributedStrategy})`
+          : ""}
+        {d.storageNotes ? ` — ${d.storageNotes}` : ""}
+      </Text>
       <View style={s.divider} />
 
       {d.entities.map((entity) => (
@@ -696,12 +701,15 @@ function DataModelPage({ project }: { project: Project }) {
                 <Text style={[s.tableCell, { flex: 0.5 }]}>
                   {field.type}
                   {field.type === "relation" && field.relationTarget ? ` → ${field.relationTarget}` : ""}
+                  {field.type === "relation" && field.relationTargetField ? `.${field.relationTargetField}` : ""}
                   {field.type === "relation" && field.relationType ? ` (${field.relationType})` : ""}
                 </Text>
                 <Text style={[s.tableCell, { flex: 0.3 }]}>{field.required ? "✓" : ""}</Text>
                 <Text style={[s.tableCell, { flex: 1.5 }]}>
                   {field.description || ""}
                   {field.type === "enum" && field.enumValues?.length ? ` [${field.enumValues.join(", ")}]` : ""}
+                  {field.type === "relation" && field.onDelete ? ` / onDelete=${field.onDelete}` : ""}
+                  {field.type === "relation" && field.onUpdate ? ` / onUpdate=${field.onUpdate}` : ""}
                 </Text>
               </View>
             ))}
@@ -778,7 +786,10 @@ function DesignSystemPage({ project }: { project: Project }) {
         <>
           <Text style={{ fontSize: 9, color: "#666", marginTop: 4, marginBottom: 2 }}>용어 사전:</Text>
           {d.uxWriting.glossary.map((g, i) => (
-            <Text key={i} style={s.listItem}>• "{g.term}" 사용 (❌ "{g.avoid}"){g.context ? ` — ${g.context}` : ""}</Text>
+            <Text key={i} style={s.listItem}>
+              • &quot;{g.term}&quot; 사용 (❌ &quot;{g.avoid}&quot;)
+              {g.context ? ` — ${g.context}` : ""}
+            </Text>
           ))}
         </>
       )}

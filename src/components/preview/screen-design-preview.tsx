@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { FlipHorizontal2, Layers3 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { FlipHorizontal2, Layers3, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import { useMockup } from "@/hooks/use-mockup.hook";
 import { useEditorStore } from "@/services/store/editor-store";
+import { useSystemRuntime } from "@/services/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -38,6 +39,64 @@ const STATE_LABELS: Record<ScreenState, string> = {
 
 const SCREEN_STATES: ScreenState[] = ["idle", "loading", "offline", "error"];
 const VIEWPORT_KEYS: MockupViewportKey[] = ["mobile", "tablet", "desktop"];
+
+function ScreenPreviewBackdrop() {
+  const { prefersReducedMotion } = useSystemRuntime();
+  const cells = useMemo(
+    () =>
+      Array.from({ length: 72 }, (_, index) => ({
+        id: index,
+        baseOpacity: 0.08 + ((index * 17) % 11) * 0.018,
+        amplitude: 3 + (index % 4) * 2,
+        duration: 4.8 + (index % 6) * 0.45,
+        delay: (index % 9) * 0.18,
+      })),
+    [],
+  );
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.035),transparent_42%),linear-gradient(180deg,rgba(248,250,252,0.025),rgba(203,213,225,0.055))]" />
+      <div className="absolute inset-x-0 bottom-0 h-44 px-6 pb-5 mask-[linear-gradient(to_top,black_40%,transparent)]">
+        <div
+          className="grid h-full w-full gap-1.5 opacity-70"
+          style={{ gridTemplateColumns: "repeat(18, minmax(0, 1fr))" }}
+        >
+          {cells.map((cell) => {
+            if (prefersReducedMotion) {
+              return (
+                <div
+                  key={cell.id}
+                  className="aspect-square rounded-[4px] border border-slate-400/6 bg-slate-300/4"
+                  style={{ opacity: cell.baseOpacity }}
+                />
+              );
+            }
+
+            return (
+              <motion.div
+                key={cell.id}
+                className="aspect-square rounded-[4px] border border-slate-400/6 bg-slate-300/4"
+                style={{ opacity: cell.baseOpacity }}
+                animate={{
+                  opacity: [cell.baseOpacity, cell.baseOpacity + 0.08, cell.baseOpacity],
+                  y: [0, -cell.amplitude, 0],
+                  scaleY: [1, 1.08, 1],
+                }}
+                transition={{
+                  duration: cell.duration,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: cell.delay,
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function getStateSummary(page: ScreenPage, state: ScreenState) {
   if (state === "error") {
@@ -137,12 +196,22 @@ function filterPageElements(
   page: ScreenPage,
   predicate: (element: MockupElement) => boolean,
 ): ScreenPage {
+  const filterElements = (elements: MockupElement[]) => {
+    const nextElements = elements.filter(predicate);
+    const validIds = new Set(nextElements.map((element) => element.id));
+
+    return nextElements.map((element) => ({
+      ...element,
+      children: element.children?.filter((childId) => validIds.has(childId)),
+    }));
+  };
+
   const filterViewport = (mockup?: ScreenPage["mockup"]) =>
     mockup
       ? {
-          mobile: mockup.mobile.filter(predicate),
-          tablet: mockup.tablet.filter(predicate),
-          desktop: mockup.desktop.filter(predicate),
+          mobile: filterElements(mockup.mobile),
+          tablet: filterElements(mockup.tablet),
+          desktop: filterElements(mockup.desktop),
         }
       : mockup;
 
@@ -166,30 +235,36 @@ function ScreenWorkspace({
   inLinks,
   outLinks,
   onNavigateToPage,
+  onRemoveElements,
 }: {
   pageId: string;
   projectType: ProjectType;
   inLinks: LinkedScreenOption[];
   outLinks: LinkedScreenOption[];
   onNavigateToPage: (pageId: string) => void;
+  onRemoveElements: (ids: string[]) => void;
 }) {
   const { page, viewport, setViewport, setElements, addElementToAll } = useMockup(pageId);
 
   if (!page) return null;
 
   return (
-    <div className="h-full overflow-hidden rounded-[28px] border bg-card/30 shadow-sm">
-      <MockupCanvas
-        page={page}
-        projectType={projectType}
-        viewport={viewport}
-        inLinks={inLinks}
-        outLinks={outLinks}
-        onNavigateToPage={onNavigateToPage}
-        onViewportChange={setViewport}
-        onMockupChange={setElements}
-        onAddElement={addElementToAll}
-      />
+    <div className="relative h-full overflow-hidden rounded-[28px] border border-slate-300/18 bg-slate-300/5 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.08)]">
+      <ScreenPreviewBackdrop />
+      <div className="relative z-10 h-full">
+        <MockupCanvas
+          page={page}
+          projectType={projectType}
+          viewport={viewport}
+          inLinks={inLinks}
+          outLinks={outLinks}
+          onNavigateToPage={onNavigateToPage}
+          onViewportChange={setViewport}
+          onMockupChange={setElements}
+          onAddElement={addElementToAll}
+          onRemoveElements={onRemoveElements}
+        />
+      </div>
     </div>
   );
 }
@@ -203,8 +278,11 @@ export function ScreenDesignPreview() {
   const setActiveViewport = useEditorStore((s) => s.setActiveViewport);
   const activeScreenState = useEditorStore((s) => s.activeScreenState);
   const setActiveScreenState = useEditorStore((s) => s.setActiveScreenState);
-  const selectedId = useEditorStore((s) => s.selectedMockupElementId);
-  const setSelectedId = useEditorStore((s) => s.setSelectedMockupElementId);
+  const selectedIds = useEditorStore((s) => s.selectedMockupElementIds);
+  const setSelectedIds = useEditorStore((s) => s.setSelectedMockupElementIds);
+  const clearSelectedIds = useEditorStore((s) => s.clearSelectedMockupElements);
+  const toggleSelectedId = useEditorStore((s) => s.toggleSelectedMockupElementId);
+  const setSingleSelectedId = useEditorStore((s) => s.setSingleSelectedMockupElementId);
   const [isFlipped, setIsFlipped] = useState(false);
 
   if (!data) return null;
@@ -280,14 +358,18 @@ export function ScreenDesignPreview() {
     });
   };
 
-  const removeElementEverywhere = (elementId: string) => {
-    updateActivePage((page) =>
-      filterPageElements(page, (element) => element.id !== elementId),
-    );
+  const removeElementsEverywhere = (elementIds: string[]) => {
+    if (elementIds.length === 0) return;
 
-    if (selectedId === elementId) {
-      setSelectedId(null);
-    }
+    const removalSet = new Set(elementIds);
+    updateActivePage((page) =>
+      filterPageElements(page, (element) => !removalSet.has(element.id)),
+    );
+    setSelectedIds(selectedIds.filter((id) => !removalSet.has(id)));
+  };
+
+  const removeElementEverywhere = (elementId: string) => {
+    removeElementsEverywhere([elementId]);
   };
 
   const updateElementMode = (elementId: string, mode: MockupNoteMode) => {
@@ -348,6 +430,22 @@ export function ScreenDesignPreview() {
     });
   };
 
+  const handleListSelection = (elementId: string | null, additive = false) => {
+    if (!elementId) {
+      clearSelectedIds();
+      return;
+    }
+
+    if (additive) {
+      toggleSelectedId(elementId);
+      return;
+    }
+
+    setSingleSelectedId(elementId);
+  };
+
+  const selectedCount = selectedIds.length;
+
   return (
     <div className="flex h-full flex-col gap-3 p-3">
       <div className="flex items-center justify-between gap-3">
@@ -395,6 +493,7 @@ export function ScreenDesignPreview() {
                 inLinks={linkedInPages}
                 outLinks={linkedOutPages}
                 onNavigateToPage={setActiveScreenPageId}
+                onRemoveElements={removeElementsEverywhere}
               />
             </div>
             {activePage && (
@@ -446,9 +545,14 @@ export function ScreenDesignPreview() {
                                 value && setActiveScreenState(value as ScreenState)
                               }
                               size="sm"
+                              className="rounded-3xl bg-muted/60 p-1"
                             >
                               {SCREEN_STATES.map((state) => (
-                                <ToggleGroupItem key={state} value={state} className="text-xs">
+                                <ToggleGroupItem
+                                  key={state}
+                                  value={state}
+                                  className="rounded-2xl border border-transparent text-xs data-[state=on]:border-border data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                                >
                                   {STATE_LABELS[state]}
                                 </ToggleGroupItem>
                               ))}
@@ -479,20 +583,35 @@ export function ScreenDesignPreview() {
                               현재 조합에서만 다르게 쓰려면 `개별`, 제외하려면 `해당 상태에서 없음`을 선택하세요.
                             </p>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {allElements.length}개 요소
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {allElements.length}개 요소
+                            </span>
+                            {selectedCount > 0 ? (
+                              <Button
+                                variant="outline"
+                                size="xs"
+                                type="button"
+                                onClick={() => removeElementsEverywhere(selectedIds)}
+                                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="size-3.5" />
+                                선택 {selectedCount}개 삭제
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                       <div className="min-h-0 flex-1 overflow-auto p-4">
                         <ScreenDesignElementList
                           elements={allElements}
-                          selectedId={selectedId}
-                          onSelect={setSelectedId}
+                          selectedIds={selectedIds}
+                          onSelect={handleListSelection}
                           onUpdateElement={(id, patch) =>
                             updateElementEverywhere(id, (el) => ({ ...el, ...patch }))
                           }
                           onRemoveElement={removeElementEverywhere}
+                          onRemoveElements={removeElementsEverywhere}
                           onReorderElements={reorderElements}
                           getNoteMode={(element) =>
                             resolveContextNote(

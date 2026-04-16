@@ -30,7 +30,7 @@ export function ExportButtons({ project, onFlushSave }: ExportButtonsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="default" size="sm" className="gap-1.5 shadow-sm">
           <Download className="size-4" />
           <span className="hidden sm:inline">내보내기</span>
         </Button>

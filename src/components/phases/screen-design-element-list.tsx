@@ -18,6 +18,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
+import { FieldLabel } from "@/components/editor/field-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,10 +47,11 @@ const ELEMENT_LABELS: Record<string, string> = {
 
 interface ElementListProps {
   elements: MockupElement[];
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  selectedIds: string[];
+  onSelect: (id: string | null, additive?: boolean) => void;
   onUpdateElement?: (id: string, patch: Partial<MockupElement>) => void;
   onRemoveElement: (id: string) => void;
+  onRemoveElements?: (ids: string[]) => void;
   onReorderElements?: (orderedIds: string[]) => void;
   disabled?: boolean;
   compact?: boolean;
@@ -73,9 +76,10 @@ function getChildElements(parent: MockupElement, allElements: MockupElement[]): 
 
 interface CardSharedProps {
   allElements: MockupElement[];
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  selectedIds: string[];
+  onSelect: (id: string | null, additive?: boolean) => void;
   onRemoveElement: (id: string) => void;
+  onRemoveElements?: (ids: string[]) => void;
   onUpdateElement?: (id: string, patch: Partial<MockupElement>) => void;
   disabled?: boolean;
   compact: boolean;
@@ -87,10 +91,11 @@ interface CardSharedProps {
 
 export function ScreenDesignElementList({
   elements,
-  selectedId,
+  selectedIds,
   onSelect,
   onUpdateElement,
   onRemoveElement,
+  onRemoveElements,
   onReorderElements,
   disabled,
   compact = false,
@@ -145,9 +150,10 @@ export function ScreenDesignElementList({
 
   const shared: CardSharedProps = {
     allElements: elements,
-    selectedId,
+    selectedIds,
     onSelect,
     onRemoveElement,
+    onRemoveElements,
     onUpdateElement,
     disabled,
     compact,
@@ -165,11 +171,13 @@ export function ScreenDesignElementList({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={topLevelIds} strategy={verticalListSortingStrategy}>
-        <div className={compact ? "space-y-1.5" : "space-y-2"}>
+        <AnimatedList className={compact ? "space-y-1.5" : "space-y-2"}>
           {topLevel.map((el) => (
-            <SortableElementCard key={el.id} element={el} shared={shared} depth={0} />
+            <AnimatedListItem key={el.id}>
+              <SortableElementCard element={el} shared={shared} depth={0} />
+            </AnimatedListItem>
           ))}
-        </div>
+        </AnimatedList>
       </SortableContext>
       <DragOverlay dropAnimation={{ duration: 150, easing: "ease-out" }}>
         {draggedElement ? (
@@ -270,11 +278,11 @@ function ElementListCard({
   depth: number;
 }) {
   const {
-    allElements, selectedId, onSelect, onRemoveElement, onUpdateElement,
+    allElements, selectedIds, onSelect, onRemoveElement, onRemoveElements, onUpdateElement,
     disabled, compact, getNoteValue, getNoteMode, onUpdateNote, onUpdateNoteMode,
   } = shared;
 
-  const isSelected = selectedId === element.id;
+  const isSelected = selectedIds.includes(element.id);
   const noteMode = getNoteMode?.(element) ?? "same";
   const noteValue = getNoteValue?.(element) ?? element.designNote ?? "";
   const canControlMode = Boolean(onUpdateNoteMode);
@@ -300,12 +308,21 @@ function ElementListCard({
   return (
     <div style={{ paddingLeft: depth * 24 }}>
       <div
-        className={`cursor-pointer rounded-lg border transition-colors ${
+        className={`group cursor-pointer rounded-xl border bg-background/80 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
           compact ? "space-y-1.5 p-2.5" : "space-y-2 p-3"
         } ${
-          isSelected ? "border-primary bg-primary/5" : "hover:border-muted-foreground/30"
+          isSelected
+            ? "border-primary/70 shadow-md shadow-primary/10"
+            : "border-border/70 hover:-translate-y-px hover:border-muted-foreground/40 hover:shadow-sm"
         }`}
-        onClick={() => onSelect(element.id)}
+        onClick={(event) => onSelect(element.id, event.metaKey || event.ctrlKey)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(element.id, e.metaKey || e.ctrlKey);
+          }
+        }}
+        tabIndex={disabled ? -1 : 0}
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
@@ -340,6 +357,11 @@ function ElementListCard({
               size="icon-xs"
               onClick={(e) => {
                 e.stopPropagation();
+                if (selectedIds.length > 1 && selectedIds.includes(element.id) && onRemoveElements) {
+                  onRemoveElements(selectedIds);
+                  return;
+                }
+
                 onRemoveElement(element.id);
               }}
               className="hover:border-destructive/40 hover:text-destructive"
@@ -352,14 +374,20 @@ function ElementListCard({
         {propSchema && propSchema.length > 0 ? (
           <div
             className="grid gap-x-3 gap-y-1.5"
-            style={{ gridTemplateColumns: "80px 1fr" }}
+            style={{ gridTemplateColumns: compact ? "110px 1fr" : "124px 1fr" }}
             onClick={(e) => e.stopPropagation()}
           >
             {propSchema.map((field) => (
               <div key={field.key} className="contents">
-                <label className="flex items-center text-[10px] text-muted-foreground">
+                <FieldLabel
+                  icon={field.icon}
+                  tooltip={field.tooltip ?? `${field.label} 설정을 설명합니다.`}
+                  className="min-h-7 text-muted-foreground"
+                  labelClassName="text-[10px] font-medium text-muted-foreground"
+                  iconClassName="size-3 text-muted-foreground"
+                >
                   {field.label}
-                </label>
+                </FieldLabel>
                 <PropFieldEditor
                   field={field}
                   value={element.props[field.key] ?? ""}
@@ -424,16 +452,17 @@ function ElementListCard({
       </div>
 
       {isLayout && expanded && children.length > 0 ? (
-        <div className={compact ? "mt-1.5 space-y-1.5" : "mt-2 space-y-2"}>
+        <AnimatedList className={compact ? "mt-1.5 space-y-1.5" : "mt-2 space-y-2"}>
           {children.map((child) => (
-            <ElementListCard
-              key={child.id}
-              element={child}
-              shared={shared}
-              depth={depth + 1}
-            />
+            <AnimatedListItem key={child.id}>
+              <ElementListCard
+                element={child}
+                shared={shared}
+                depth={depth + 1}
+              />
+            </AnimatedListItem>
           ))}
-        </div>
+        </AnimatedList>
       ) : null}
     </div>
   );

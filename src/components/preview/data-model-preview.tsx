@@ -1,6 +1,35 @@
 "use client";
 
 import { usePhaseData } from "@/hooks/use-phase.hook";
+import type { EntityField } from "@/types/phases";
+
+const distributedStrategyLabels = {
+  primaryReplica: "Primary + Replica",
+  sharded: "Sharding",
+  multiRegion: "Multi-region",
+} as const;
+
+function formatFieldType(field: EntityField) {
+  if (field.type !== "relation") {
+    return field.type;
+  }
+
+  const target =
+    field.relationTarget && field.relationTargetField
+      ? `${field.relationTarget}.${field.relationTargetField}`
+      : field.relationTarget;
+
+  const actions = [field.onDelete, field.onUpdate].filter(Boolean);
+
+  return [
+    field.type,
+    target ? `-> ${target}` : "",
+    field.relationType ? `(${field.relationType})` : "",
+    actions.length > 0 ? `[${actions.join(" / ")}]` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 export function DataModelPreview() {
   const { data } = usePhaseData("dataModel");
@@ -28,7 +57,9 @@ export function DataModelPreview() {
                   {entity.fields.map((f, i) => (
                     <tr key={i} className="border-b last:border-0">
                       <td className="px-3 py-1">{f.name}</td>
-                      <td className="px-3 py-1 font-mono">{f.type}</td>
+                      <td className="px-3 py-1 font-mono">
+                        {formatFieldType(f)}
+                      </td>
                       <td className="px-3 py-1">{f.required ? "Y" : "-"}</td>
                     </tr>
                   ))}
@@ -39,7 +70,12 @@ export function DataModelPreview() {
         ))
       )}
       <div className="text-muted-foreground">
-        <p>저장 전략: {data.storageStrategy}</p>
+        <p>
+          저장 전략: {data.storageStrategy}
+          {data.storageStrategy === "distributed" && data.distributedStrategy
+            ? ` (${distributedStrategyLabels[data.distributedStrategy]})`
+            : ""}
+        </p>
         {data.storageNotes && <p>{data.storageNotes}</p>}
       </div>
     </div>
