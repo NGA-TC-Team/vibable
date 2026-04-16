@@ -12,11 +12,14 @@ import { usePhaseData } from "@/hooks/use-phase.hook";
 import { useEditorStore } from "@/services/store/editor-store";
 import { SitemapDiagram } from "./sitemap-diagram";
 import { UserFlowDiagram } from "./user-flow-diagram";
+import { SitemapTableView, UserFlowTableView } from "./info-arch-table-view";
 
 export function InfoArchitecturePreview() {
   const { data } = usePhaseData("infoArchitecture");
   const infoArchView = useEditorStore((s) => s.infoArchView);
   const setInfoArchView = useEditorStore((s) => s.setInfoArchView);
+  const displayMode = useEditorStore((s) => s.infoArchDisplayMode);
+  const setDisplayMode = useEditorStore((s) => s.setInfoArchDisplayMode);
   const selectedFlowId = useEditorStore((s) => s.selectedFlowId);
   const setSelectedFlowId = useEditorStore((s) => s.setSelectedFlowId);
 
@@ -39,26 +42,47 @@ export function InfoArchitecturePreview() {
 
   return (
     <div className="flex flex-col gap-4 text-sm">
-      <ToggleGroup
-        type="single"
-        value={infoArchView}
-        onValueChange={(v) => {
-          if (v === "sitemap" || v === "userFlow") setInfoArchView(v);
-        }}
-        className="self-start"
-      >
-        <ToggleGroupItem value="sitemap" className="text-xs">
-          사이트맵
-        </ToggleGroupItem>
-        <ToggleGroupItem value="userFlow" className="text-xs">
-          유저 플로우
-        </ToggleGroupItem>
-      </ToggleGroup>
+      <div className="flex items-center justify-between">
+        <ToggleGroup
+          type="single"
+          value={infoArchView}
+          onValueChange={(v) => {
+            if (v === "sitemap" || v === "userFlow") setInfoArchView(v);
+          }}
+          className="self-start"
+        >
+          <ToggleGroupItem value="sitemap" className="text-xs">
+            사이트맵
+          </ToggleGroupItem>
+          <ToggleGroupItem value="userFlow" className="text-xs">
+            유저 플로우
+          </ToggleGroupItem>
+        </ToggleGroup>
+
+        <ToggleGroup
+          type="single"
+          value={displayMode}
+          onValueChange={(v) => {
+            if (v === "diagram" || v === "table") setDisplayMode(v);
+          }}
+        >
+          <ToggleGroupItem value="diagram" className="text-xs">
+            다이어그램
+          </ToggleGroupItem>
+          <ToggleGroupItem value="table" className="text-xs">
+            표
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
       {infoArchView === "sitemap" && (
         <div className="space-y-4">
           {hasSitemap ? (
-            <SitemapDiagram sitemap={data.sitemap} />
+            displayMode === "diagram" ? (
+              <SitemapDiagram sitemap={data.sitemap} />
+            ) : (
+              <SitemapTableView sitemap={data.sitemap} />
+            )
           ) : (
             <p className="text-muted-foreground/50 italic">사이트맵을 추가하세요</p>
           )}
@@ -91,7 +115,13 @@ export function InfoArchitecturePreview() {
                   ))}
                 </SelectContent>
               </Select>
-              {activeFlow && <UserFlowDiagram flow={activeFlow} />}
+              {activeFlow && (
+                displayMode === "diagram" ? (
+                  <UserFlowDiagram flow={activeFlow} />
+                ) : (
+                  <UserFlowTableView flow={activeFlow} />
+                )
+              )}
             </>
           ) : (
             <p className="text-muted-foreground/50 italic">유저 플로우를 추가하세요</p>

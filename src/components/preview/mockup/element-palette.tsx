@@ -7,7 +7,7 @@ import type { MockupElementType } from "@/types/phases";
 const CATEGORIES: { label: string; types: MockupElementType[] }[] = [
   {
     label: "레이아웃",
-    types: ["header", "sidebar", "card", "divider", "spacer", "modal", "tabs"],
+    types: ["header", "sidebar", "card", "divider", "spacer", "modal", "tabs", "grid", "hstack", "vstack"],
   },
   {
     label: "콘텐츠",
@@ -27,7 +27,7 @@ const CATEGORIES: { label: string; types: MockupElementType[] }[] = [
   },
 ];
 
-function PaletteItem({ type }: { type: MockupElementType }) {
+function PaletteItem({ type, isActive }: { type: MockupElementType; isActive: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette-${type}`,
     data: { type, source: "palette" },
@@ -39,7 +39,7 @@ function PaletteItem({ type }: { type: MockupElementType }) {
       {...listeners}
       {...attributes}
       className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-accent transition-colors ${
-        isDragging ? "opacity-50" : ""
+        isDragging || isActive ? "opacity-30" : ""
       }`}
     >
       {ELEMENT_ICONS[type]}
@@ -48,7 +48,7 @@ function PaletteItem({ type }: { type: MockupElementType }) {
   );
 }
 
-export function ElementPalette() {
+export function ElementPalette({ activeId }: { activeId?: string | null }) {
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-2">
       {CATEGORIES.map((cat) => (
@@ -58,7 +58,11 @@ export function ElementPalette() {
           </p>
           <div className="flex flex-col">
             {cat.types.map((type) => (
-              <PaletteItem key={type} type={type} />
+              <PaletteItem
+                key={type}
+                type={type}
+                isActive={activeId === `palette-${type}`}
+              />
             ))}
           </div>
         </div>

@@ -4,6 +4,7 @@ export const AUTOSAVE_DEBOUNCE_MS = 500;
 export const AUTOSAVE_RETRY_DELAY_MS = 3000;
 export const AUTOSAVE_MAX_RETRIES = 3;
 export const SHARE_URL_MAX_BYTES = 64 * 1024;
+export const MAX_SITEMAP_DEPTH = 4;
 
 export const SECTION_TOOLTIPS: Record<string, string> = {
   "phase.overview": "프로젝트의 핵심 정보를 정의하세요. 이름, 배경, 목표, 대상 등.",

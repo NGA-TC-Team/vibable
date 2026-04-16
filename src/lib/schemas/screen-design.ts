@@ -30,7 +30,7 @@ const mockupElementTypeSchema = z.enum([
   "divider", "icon", "bottomNav", "sidebar", "table", "form", "modal",
   "tabs", "carousel", "avatar", "badge", "toggle", "checkbox", "radio",
   "dropdown", "searchbar", "breadcrumb", "pagination", "progressbar",
-  "map", "video", "chart", "spacer",
+  "map", "video", "chart", "spacer", "grid", "hstack", "vstack",
 ]);
 
 export const mockupElementSchema = z.object({
@@ -41,6 +41,7 @@ export const mockupElementSchema = z.object({
   width: z.number().default(100),
   height: z.number().default(40),
   props: z.record(z.string(), z.string()).default({}),
+  children: z.array(z.string()).optional(),
 });
 
 export const mockupViewportSchema = z.object({

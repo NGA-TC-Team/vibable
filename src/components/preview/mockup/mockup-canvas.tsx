@@ -5,14 +5,18 @@ import {
   DndContext,
   useDraggable,
   useDroppable,
+  DragOverlay,
+  pointerWithin,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import { BrowserFrame } from "../device-frames/browser-frame";
 import { IPhoneFrame } from "../device-frames/iphone-frame";
-import { MockupElementView, getDefaultSize } from "./mockup-element";
+import { MockupElementView, getDefaultSize, GhostPreview } from "./mockup-element";
 import { ElementPalette } from "./element-palette";
 import { ViewportTabs, VIEWPORT_WIDTHS, type Viewport } from "./viewport-tabs";
 import type { MockupElement, MockupElementType, ProjectType, ScreenPage } from "@/types/phases";
@@ -34,6 +38,8 @@ export function MockupCanvas({
 }: MockupCanvasProps) {
   const elements = useMemo(() => page.mockup?.[viewport] ?? [], [page.mockup, viewport]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isOverCanvas, setIsOverCanvas] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -44,9 +50,21 @@ export function MockupCanvas({
   const canvasHeight = projectType === "mobile" || viewport === "mobile" ? 812 : 600;
   const scale = viewport === "desktop" ? 0.55 : 1;
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    setIsOverCanvas(event.over?.id === "mockup-canvas");
+  }, []);
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over, delta } = event;
+
+      setActiveId(null);
+      setIsOverCanvas(false);
+
       if (!over) return;
 
       const data = active.data.current;
@@ -95,6 +113,11 @@ export function MockupCanvas({
     [elements, onMockupChange, scale],
   );
 
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+    setIsOverCanvas(false);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
@@ -116,12 +139,14 @@ export function MockupCanvas({
         setDroppableRef(node);
         (canvasRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }}
-      className="relative bg-background"
+      className={`relative bg-background transition-colors ${
+        isOverCanvas ? "ring-2 ring-primary ring-dashed" : ""
+      }`}
       style={{ width: canvasWidth, height: canvasHeight }}
       onClick={() => setSelectedId(null)}
     >
       {elements.map((el) => (
-        <DraggableElement key={el.id} element={el}>
+        <DraggableElement key={el.id} element={el} isDragActive={activeId === el.id}>
           <MockupElementView
             element={el}
             selected={el.id === selectedId}
@@ -142,10 +167,17 @@ export function MockupCanvas({
     );
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={pointerWithin}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
       <div className="flex h-full gap-3">
         <aside className="w-36 shrink-0 overflow-y-auto border-r">
-          <ElementPalette />
+          <ElementPalette activeId={activeId} />
         </aside>
         <div className="flex flex-1 flex-col gap-3 overflow-auto">
           <div className="flex items-center gap-3">
@@ -167,6 +199,9 @@ export function MockupCanvas({
           </div>
         </div>
       </div>
+      <DragOverlay dropAnimation={{ duration: 200, easing: "ease-out" }}>
+        {activeId ? <GhostPreview id={activeId} elements={elements} /> : null}
+      </DragOverlay>
     </DndContext>
   );
 }
@@ -174,9 +209,11 @@ export function MockupCanvas({
 function DraggableElement({
   element,
   children,
+  isDragActive,
 }: {
   element: MockupElement;
   children: React.ReactNode;
+  isDragActive: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: element.id,
@@ -188,13 +225,14 @@ function DraggableElement({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      className={isDragActive ? "transition-transform duration-200" : ""}
       style={{
         position: "absolute",
         left: element.x,
         top: element.y,
         width: element.width,
         height: element.height,
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.3 : 1,
       }}
     >
       {children}

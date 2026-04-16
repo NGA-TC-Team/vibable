@@ -34,9 +34,15 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
-        <Link href="/workspace" className="flex items-center gap-1.5 shrink-0">
+        <Link
+          href="/workspace"
+          className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
+        >
           <VibableLogo width={24} height={24} />
-          <span className="hidden text-sm font-semibold sm:inline">vibable</span>
+          <span className="hidden text-sm font-semibold sm:inline">Vibable</span>
+          <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
+            Powered By NGA
+          </span>
         </Link>
 
         <div className="h-5 w-px bg-border" />
@@ -73,7 +79,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
 
         <ResizablePanelGroup orientation="horizontal" className="flex-1">
           <ResizablePanel defaultSize={65} minSize={30}>
-            <div className="flex h-full flex-col">
+            <div className="flex h-full flex-col bg-muted/40">
               {!isReadOnly && (
                 <div className="flex items-center gap-2 border-b px-4 py-2">
                   <MemoModal />

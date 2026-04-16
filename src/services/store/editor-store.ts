@@ -6,6 +6,7 @@ export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type ActiveViewport = "mobile" | "tablet" | "desktop";
 
 export type InfoArchView = "sitemap" | "userFlow";
+export type InfoArchDisplayMode = "diagram" | "table";
 
 export type EditorState = {
   currentPhase: number;
@@ -21,6 +22,7 @@ export type EditorState = {
   printPreviewPage: number;
   activeScreenPageId: string | null;
   infoArchView: InfoArchView;
+  infoArchDisplayMode: InfoArchDisplayMode;
   selectedFlowId: string | null;
 
   setPhase: (phase: number) => void;
@@ -34,6 +36,7 @@ export type EditorState = {
   setActiveViewport: (viewport: ActiveViewport) => void;
   toggleSidebar: () => void;
   setInfoArchView: (view: InfoArchView) => void;
+  setInfoArchDisplayMode: (mode: InfoArchDisplayMode) => void;
   setSelectedFlowId: (id: string | null) => void;
   setPrintPreview: (on: boolean) => void;
   setPrintPreviewPage: (page: number) => void;
@@ -55,6 +58,7 @@ const initialState = {
   printPreviewPage: 0,
   activeScreenPageId: null as string | null,
   infoArchView: "sitemap" as InfoArchView,
+  infoArchDisplayMode: "diagram" as InfoArchDisplayMode,
   selectedFlowId: null as string | null,
 };
 
@@ -80,6 +84,7 @@ export const useEditorStore = create<EditorState>()(
       toggleSidebar: () =>
         set((s) => ({ isSidebarCollapsed: !s.isSidebarCollapsed })),
       setInfoArchView: (infoArchView) => set({ infoArchView }),
+      setInfoArchDisplayMode: (infoArchDisplayMode) => set({ infoArchDisplayMode }),
       setSelectedFlowId: (selectedFlowId) => set({ selectedFlowId }),
       setPrintPreview: (isPrintPreview) =>
         set({ isPrintPreview, printPreviewPage: 0 }),

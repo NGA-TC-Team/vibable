@@ -171,7 +171,10 @@ export type MockupElementType =
   | "map"
   | "video"
   | "chart"
-  | "spacer";
+  | "spacer"
+  | "grid"
+  | "hstack"
+  | "vstack";
 
 export interface MockupElement {
   id: string;
@@ -181,6 +184,7 @@ export interface MockupElement {
   width: number;
   height: number;
   props: Record<string, string>;
+  children?: string[];
 }
 
 export interface MockupViewport {

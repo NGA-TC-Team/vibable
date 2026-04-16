@@ -29,11 +29,20 @@ export function WorkspaceClient() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <VibableLogo width={28} height={28} />
-            <h1 className="text-lg font-semibold">
-              {workspace?.name ?? "워크스페이스"}
-            </h1>
+            <span className="shrink-0 text-lg font-semibold tracking-tight">
+              Vibable
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+              Powered By NGA
+            </span>
+            <span
+              className="hidden min-w-0 truncate text-sm font-medium text-muted-foreground sm:inline"
+              title={workspace?.name ?? undefined}
+            >
+              · {workspace?.name ?? "워크스페이스"}
+            </span>
           </div>
           <ModeToggle />
         </div>

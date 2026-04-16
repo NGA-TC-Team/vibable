@@ -31,12 +31,15 @@ import {
   Video,
   BarChart3,
   Maximize2,
+  Grid3X3,
+  Rows3,
+  Columns3,
 } from "lucide-react";
-import type { MockupElement as MockupElementType } from "@/types/phases";
+import type { MockupElement } from "@/types/phases";
 
 const ELEMENT_RENDERERS: Record<
   string,
-  (el: MockupElementType) => React.ReactNode
+  (el: MockupElement) => React.ReactNode
 > = {
   header: () => (
     <div className="flex h-full items-center gap-2 bg-muted/60 px-3">
@@ -248,6 +251,42 @@ const ELEMENT_RENDERERS: Record<
     </div>
   ),
   spacer: () => <div className="h-full w-full" />,
+  grid: (el) => (
+    <div
+      className="h-full w-full rounded border-2 border-dashed border-muted-foreground/30 p-1"
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${el.props.columns || "2"}, 1fr)`,
+        gap: `${el.props.gap || "8"}px`,
+      }}
+    >
+      {(!el.children || el.children.length === 0) && (
+        <div className="col-span-full flex items-center justify-center text-[10px] text-muted-foreground">
+          Grid ({el.props.columns || "2"}열)
+        </div>
+      )}
+    </div>
+  ),
+  hstack: (el) => (
+    <div
+      className="flex h-full w-full items-center rounded border-2 border-dashed border-muted-foreground/30 p-1"
+      style={{ gap: `${el.props.gap || "8"}px` }}
+    >
+      {(!el.children || el.children.length === 0) && (
+        <div className="flex-1 text-center text-[10px] text-muted-foreground">HStack</div>
+      )}
+    </div>
+  ),
+  vstack: (el) => (
+    <div
+      className="flex h-full w-full flex-col rounded border-2 border-dashed border-muted-foreground/30 p-1"
+      style={{ gap: `${el.props.gap || "8"}px` }}
+    >
+      {(!el.children || el.children.length === 0) && (
+        <div className="flex-1 flex items-center justify-center text-[10px] text-muted-foreground">VStack</div>
+      )}
+    </div>
+  ),
 };
 
 export const ELEMENT_ICONS: Record<string, React.ReactNode> = {
@@ -282,6 +321,9 @@ export const ELEMENT_ICONS: Record<string, React.ReactNode> = {
   video: <Video className="size-4" />,
   chart: <BarChart3 className="size-4" />,
   spacer: <Maximize2 className="size-4" />,
+  grid: <Grid3X3 className="size-4" />,
+  hstack: <Columns3 className="size-4" />,
+  vstack: <Rows3 className="size-4" />,
 };
 
 export const ELEMENT_LABELS: Record<string, string> = {
@@ -316,6 +358,9 @@ export const ELEMENT_LABELS: Record<string, string> = {
   video: "Video",
   chart: "Chart",
   spacer: "Spacer",
+  grid: "Grid",
+  hstack: "HStack",
+  vstack: "VStack",
 };
 
 const DEFAULT_SIZES: Record<string, { width: number; height: number }> = {
@@ -350,6 +395,9 @@ const DEFAULT_SIZES: Record<string, { width: number; height: number }> = {
   video: { width: 300, height: 180 },
   chart: { width: 300, height: 200 },
   spacer: { width: 100, height: 40 },
+  grid: { width: 300, height: 200 },
+  hstack: { width: 300, height: 60 },
+  vstack: { width: 200, height: 200 },
 };
 
 export function getDefaultSize(type: string) {
@@ -357,7 +405,7 @@ export function getDefaultSize(type: string) {
 }
 
 interface MockupElementProps {
-  element: MockupElementType;
+  element: MockupElement;
   selected?: boolean;
   onSelect?: () => void;
 }
@@ -371,13 +419,7 @@ export function MockupElementView({ element, selected, onSelect }: MockupElement
 
   return (
     <div
-      className={`absolute cursor-pointer ${selected ? "ring-2 ring-primary" : ""}`}
-      style={{
-        left: element.x,
-        top: element.y,
-        width: element.width,
-        height: element.height,
-      }}
+      className={`h-full w-full cursor-pointer ${selected ? "ring-2 ring-primary" : ""}`}
       onClick={(e) => {
         e.stopPropagation();
         onSelect?.();
@@ -390,6 +432,45 @@ export function MockupElementView({ element, selected, onSelect }: MockupElement
           <span className="opacity-70">{element.width}×{element.height}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+export function GhostPreview({
+  id,
+  elements,
+}: {
+  id: string;
+  elements: MockupElement[];
+}) {
+  const el = elements.find((e) => e.id === id);
+  if (!el) {
+    const paletteType = id.replace("palette-", "");
+    const size = getDefaultSize(paletteType);
+    return (
+      <div
+        className="rounded ring-2 ring-primary shadow-lg bg-card opacity-80"
+        style={{ width: size.width * 0.5, height: size.height * 0.5 }}
+      >
+        <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">
+          {ELEMENT_LABELS[paletteType] ?? paletteType}
+        </div>
+      </div>
+    );
+  }
+
+  const renderer = ELEMENT_RENDERERS[el.type] ?? (() => (
+    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      {el.type}
+    </div>
+  ));
+
+  return (
+    <div
+      className="rounded ring-2 ring-primary shadow-lg opacity-80"
+      style={{ width: el.width, height: el.height }}
+    >
+      {renderer(el)}
     </div>
   );
 }

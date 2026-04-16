@@ -13,22 +13,18 @@ import { PHASE_LABELS, type Project } from "@/types/phases";
 import { stripMemos } from "@/lib/strip-memos";
 
 Font.register({
-  family: "Pretendard",
+  family: "NotoSansKR",
   fonts: [
-    {
-      src: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.subset.woff2",
-      fontWeight: 400,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Bold.subset.woff2",
-      fontWeight: 700,
-    },
+    { src: "/fonts/NotoSansKR-Regular.ttf", fontWeight: 400 },
+    { src: "/fonts/NotoSansKR-Bold.ttf", fontWeight: 700 },
   ],
 });
 
+Font.registerHyphenationCallback((word) => [word]);
+
 const s = StyleSheet.create({
   page: {
-    fontFamily: "Pretendard",
+    fontFamily: "NotoSansKR",
     fontSize: 10,
     paddingTop: 40,
     paddingBottom: 50,
@@ -55,7 +51,7 @@ const s = StyleSheet.create({
   },
   footerText: { fontSize: 8, color: "#999" },
   coverPage: {
-    fontFamily: "Pretendard",
+    fontFamily: "NotoSansKR",
     paddingHorizontal: 50,
     justifyContent: "center",
     alignItems: "center",
@@ -194,7 +190,7 @@ function OverviewPage({ project }: { project: Project }) {
       )}
       {(d.competitors?.length ?? 0) > 0 && (
         <>
-          <Text style={s.subTitle}>경쟁사 / 대안</Text>
+          <Text style={s.subTitle} minPresenceAhead={40}>경쟁사 / 대안</Text>
           <View style={s.table}>
             <View style={s.tableHeader}>
               <Text style={s.tableCellBold}>서비스명</Text>
@@ -202,7 +198,7 @@ function OverviewPage({ project }: { project: Project }) {
               <Text style={s.tableCellBold}>약점</Text>
             </View>
             {d.competitors!.map((c) => (
-              <View key={c.id} style={s.tableRow}>
+              <View key={c.id} style={s.tableRow} wrap={false}>
                 <Text style={s.tableCell}>{c.name}</Text>
                 <Text style={s.tableCell}>{c.strength}</Text>
                 <Text style={s.tableCell}>{c.weakness}</Text>
@@ -221,7 +217,7 @@ function OverviewPage({ project }: { project: Project }) {
       )}
       {(d.successMetrics?.length ?? 0) > 0 && (
         <>
-          <Text style={s.subTitle}>성공 지표</Text>
+          <Text style={s.subTitle} minPresenceAhead={40}>성공 지표</Text>
           <View style={s.table}>
             <View style={s.tableHeader}>
               <Text style={s.tableCellBold}>지표</Text>
@@ -229,7 +225,7 @@ function OverviewPage({ project }: { project: Project }) {
               <Text style={s.tableCellBold}>측정 방법</Text>
             </View>
             {d.successMetrics!.map((m) => (
-              <View key={m.id} style={s.tableRow}>
+              <View key={m.id} style={s.tableRow} wrap={false}>
                 <Text style={s.tableCell}>{m.metric}</Text>
                 <Text style={s.tableCell}>{m.target}</Text>
                 <Text style={s.tableCell}>{m.measurement}</Text>
@@ -240,7 +236,7 @@ function OverviewPage({ project }: { project: Project }) {
       )}
       {(d.timeline?.length ?? 0) > 0 && (
         <>
-          <Text style={s.subTitle}>일정</Text>
+          <Text style={s.subTitle} minPresenceAhead={40}>일정</Text>
           <View style={s.table}>
             <View style={s.tableHeader}>
               <Text style={s.tableCellBold}>마일스톤</Text>
@@ -248,7 +244,7 @@ function OverviewPage({ project }: { project: Project }) {
               <Text style={s.tableCellBold}>설명</Text>
             </View>
             {d.timeline!.map((m) => (
-              <View key={m.id} style={s.tableRow}>
+              <View key={m.id} style={s.tableRow} wrap={false}>
                 <Text style={s.tableCell}>{m.milestone}</Text>
                 <Text style={s.tableCell}>{m.date}</Text>
                 <Text style={s.tableCell}>{m.description}</Text>
@@ -352,7 +348,7 @@ function RequirementsPage({ project }: { project: Project }) {
 
       {d.functional.length > 0 && (
         <>
-          <Text style={s.subTitle}>기능 요구사항</Text>
+          <Text style={s.subTitle} minPresenceAhead={40}>기능 요구사항</Text>
           <View style={s.table}>
             <View style={s.tableHeader}>
               <Text style={[s.tableCellBold, { flex: 0.5 }]}>ID</Text>
@@ -361,7 +357,7 @@ function RequirementsPage({ project }: { project: Project }) {
               <Text style={[s.tableCellBold, { flex: 0.5 }]}>우선순위</Text>
             </View>
             {d.functional.map((r) => (
-              <View key={r.id} style={s.tableRow}>
+              <View key={r.id} style={s.tableRow} wrap={false}>
                 <Text style={[s.tableCell, { flex: 0.5 }]}>{r.id}</Text>
                 <Text style={s.tableCell}>{r.title}</Text>
                 <Text style={[s.tableCell, { flex: 2 }]}>{r.description}</Text>
@@ -374,7 +370,7 @@ function RequirementsPage({ project }: { project: Project }) {
 
       {d.nonFunctional.length > 0 && (
         <>
-          <Text style={s.subTitle}>비기능 요구사항</Text>
+          <Text style={s.subTitle} minPresenceAhead={40}>비기능 요구사항</Text>
           <View style={s.table}>
             <View style={s.tableHeader}>
               <Text style={[s.tableCellBold, { flex: 0.5 }]}>ID</Text>
@@ -382,7 +378,7 @@ function RequirementsPage({ project }: { project: Project }) {
               <Text style={[s.tableCellBold, { flex: 2 }]}>설명</Text>
             </View>
             {d.nonFunctional.map((r) => (
-              <View key={r.id} style={s.tableRow}>
+              <View key={r.id} style={s.tableRow} wrap={false}>
                 <Text style={[s.tableCell, { flex: 0.5 }]}>{r.id}</Text>
                 <Text style={[s.tableCell, { flex: 0.5 }]}>{r.category}</Text>
                 <Text style={[s.tableCell, { flex: 2 }]}>{r.description}</Text>
@@ -599,7 +595,7 @@ function DataModelPage({ project }: { project: Project }) {
               <Text style={[s.tableCellBold, { flex: 1.5 }]}>설명</Text>
             </View>
             {entity.fields.map((field, i) => (
-              <View key={i} style={s.tableRow}>
+              <View key={i} style={s.tableRow} wrap={false}>
                 <Text style={s.tableCell}>{field.name}</Text>
                 <Text style={[s.tableCell, { flex: 0.5 }]}>
                   {field.type}
