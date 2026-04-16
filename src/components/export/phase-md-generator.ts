@@ -2,12 +2,25 @@
 
 import { generateDesignMd } from "@/components/export/design-md-generator";
 import {
+  AGENT_PHASE_KEYS,
+  AGENT_PHASE_LABELS,
   PHASE_LABELS,
+  type AgentPhaseKey,
   type DataModelPhase,
   type EntityField,
   type PhaseData,
   type PhaseKey,
 } from "@/types/phases";
+
+const AGENT_MD_KEYS: AgentPhaseKey[] = [
+  "agentRequirements",
+  "agentArchitecture",
+  "agentBehavior",
+  "agentTools",
+  "agentSafety",
+];
+
+export type PhaseMarkdownExportKey = Exclude<PhaseKey, "screenDesign"> | AgentPhaseKey;
 
 function pushSection(lines: string[], title: string, body: string[]) {
   lines.push(`## ${title}`, "");
@@ -21,6 +34,36 @@ function formatBullets(items: string[]) {
 
 function formatParagraph(value?: string) {
   return value?.trim() ? [value.trim()] : ["없음"];
+}
+
+function formatOptionalBullets(title: string, items: string[]) {
+  const visibleItems = items.filter(Boolean);
+  if (visibleItems.length === 0) return [];
+
+  return [`- ${title}:`, ...visibleItems.map((item) => `  - ${item}`)];
+}
+
+function formatPersonaMarkdown(persona: PhaseData["userScenario"]["personas"][number]) {
+  return [
+    `### ${persona.name || "이름 없는 페르소나"}`,
+    `- 역할: ${persona.role || "없음"}`,
+    ...(persona.demographics?.trim()
+      ? [`- 배경 정보: ${persona.demographics.trim()}`]
+      : []),
+    ...(persona.context?.trim() ? [`- 사용 맥락: ${persona.context.trim()}`] : []),
+    ...(persona.techProficiency?.trim()
+      ? [`- 디지털 숙련도: ${persona.techProficiency.trim()}`]
+      : []),
+    ...formatOptionalBullets("행동 패턴", persona.behaviors ?? []),
+    ...formatOptionalBullets("동기", persona.motivations ?? []),
+    ...formatOptionalBullets("핵심 니즈", persona.needs ?? []),
+    ...formatOptionalBullets("목표", persona.goals ?? []),
+    ...formatOptionalBullets("페인 포인트", persona.painPoints ?? []),
+    ...formatOptionalBullets("좌절 포인트", persona.frustrations ?? []),
+    ...formatOptionalBullets("성공 기준", persona.successCriteria ?? []),
+    ...(persona.quote?.trim() ? [`- 대표 발화: "${persona.quote.trim()}"`] : []),
+    "",
+  ];
 }
 
 function formatKeyValue(entries: Array<[string, string | number | undefined]>) {
@@ -69,17 +112,33 @@ function formatStorageStrategy(dataModel: DataModelPhase) {
 export function generatePhaseMarkdown(
   projectName: string,
   phases: PhaseData,
-  phaseKey: Exclude<PhaseKey, "screenDesign">,
+  phaseKey: PhaseMarkdownExportKey,
 ) {
-  if (phaseKey === "designSystem") {
+  if (AGENT_MD_KEYS.includes(phaseKey as AgentPhaseKey)) {
+    const idx = AGENT_PHASE_KEYS.indexOf(phaseKey as AgentPhaseKey);
+    const label = AGENT_PHASE_LABELS[idx] ?? phaseKey;
+    const slice = phases[phaseKey as keyof PhaseData];
+    return [
+      `# ${projectName} - ${label}`,
+      "",
+      "```json",
+      JSON.stringify(slice ?? {}, null, 2),
+      "```",
+      "",
+    ].join("\n");
+  }
+
+  const legacyKey = phaseKey as Exclude<PhaseKey, "screenDesign">;
+
+  if (legacyKey === "designSystem") {
     return generateDesignMd(projectName, phases.designSystem);
   }
 
   const lines = [`# ${projectName} - ${PHASE_LABELS[
-    ["overview", "userScenario", "requirements", "infoArchitecture", "screenDesign", "dataModel", "designSystem"].indexOf(phaseKey)
-  ]}`, "", `- 프로젝트: ${projectName}`, `- 페이즈: ${phaseKey}`, ""];
+    ["overview", "userScenario", "requirements", "infoArchitecture", "screenDesign", "dataModel", "designSystem"].indexOf(legacyKey)
+  ]}`, "", `- 프로젝트: ${projectName}`, `- 페이즈: ${legacyKey}`, ""];
 
-  switch (phaseKey) {
+  switch (legacyKey) {
     case "overview": {
       const { overview } = phases;
       pushSection(lines, "프로젝트 개요", [
@@ -138,17 +197,14 @@ export function generatePhaseMarkdown(
     }
     case "userScenario": {
       const { userScenario } = phases;
+      pushSection(lines, "페르소나 작성 모드", [
+        `- 모드: ${userScenario.personaDetailLevel === "detailed" ? "상세형" : "간편형"}`,
+      ]);
       pushSection(
         lines,
         "페르소나",
         userScenario.personas.length > 0
-          ? userScenario.personas.flatMap((persona) => [
-              `### ${persona.name || "이름 없는 페르소나"}`,
-              `- 역할: ${persona.role || "없음"}`,
-              `- 목표: ${(persona.goals ?? []).join(", ") || "없음"}`,
-              `- 페인 포인트: ${(persona.painPoints ?? []).join(", ") || "없음"}`,
-              "",
-            ])
+          ? userScenario.personas.flatMap((persona) => formatPersonaMarkdown(persona))
           : ["- 없음"],
       );
       pushSection(

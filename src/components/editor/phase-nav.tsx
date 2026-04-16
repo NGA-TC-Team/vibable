@@ -13,6 +13,11 @@ import {
   AlertCircle,
   PanelLeftClose,
   PanelLeft,
+  ListChecks,
+  Workflow,
+  Sparkles,
+  Plug,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,11 +28,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { PHASE_LABELS, type ProjectType } from "@/types/phases";
+import {
+  AGENT_PHASE_LABELS,
+  PHASE_LABELS,
+  type PhaseData,
+  type ProjectType,
+} from "@/types/phases";
 import { useEditorStore } from "@/services/store/editor-store";
 import { useSystemRuntime } from "@/services/store/hooks";
+import {
+  AGENT_PHASE_DATA_KEYS,
+  isAgentPhaseComplete,
+  isLegacyPhaseComplete,
+  LEGACY_PHASE_DATA_KEYS,
+} from "@/lib/phase-nav-config";
 
-const phaseIcons = [
+const legacyPhaseIcons = [
   FileText,
   Users,
   ClipboardList,
@@ -37,38 +53,15 @@ const phaseIcons = [
   Palette,
 ];
 
-function isPhaseComplete(phaseIndex: number, phaseData: unknown): boolean {
-  if (!phaseData) return false;
-  const pd = phaseData as Record<string, unknown>;
-  switch (phaseIndex) {
-    case 0:
-      return !!(pd as { projectName?: string }).projectName;
-    case 1:
-      return ((pd as { personas?: unknown[] }).personas?.length ?? 0) > 0;
-    case 2:
-      return ((pd as { functional?: unknown[] }).functional?.length ?? 0) > 0;
-    case 3:
-      return ((pd as { sitemap?: unknown[] }).sitemap?.length ?? 0) > 0;
-    case 4:
-      return ((pd as { pages?: unknown[] }).pages?.length ?? 0) > 0;
-    case 5:
-      return ((pd as { entities?: unknown[] }).entities?.length ?? 0) > 0;
-    case 6:
-      return !!(pd as { visualTheme?: { mood?: string } }).visualTheme?.mood;
-    default:
-      return false;
-  }
-}
-
-const PHASE_DATA_KEYS = [
-  "overview",
-  "userScenario",
-  "requirements",
-  "infoArchitecture",
-  "screenDesign",
-  "dataModel",
-  "designSystem",
-] as const;
+const agentPhaseIcons = [
+  FileText,
+  Users,
+  ListChecks,
+  Workflow,
+  Sparkles,
+  Plug,
+  ShieldAlert,
+];
 
 interface PhaseNavProps {
   projectType: ProjectType;
@@ -90,12 +83,28 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
     6: "UX 라이팅",
   };
 
+  const isAgent = projectType === "agent";
+  const dataKeys = isAgent ? AGENT_PHASE_DATA_KEYS : LEGACY_PHASE_DATA_KEYS;
+  const phaseIcons = isAgent ? agentPhaseIcons : legacyPhaseIcons;
+
   const completedCount = Array.from({ length: 7 }).reduce<number>((acc, _, i) => {
-    const dataKey = PHASE_DATA_KEYS[i];
-    return acc + (phaseData ? (isPhaseComplete(i, phaseData[dataKey]) ? 1 : 0) : 0);
+    if (!phaseData) return acc;
+    const complete = isAgent
+      ? isAgentPhaseComplete(i, phaseData as PhaseData)
+      : isLegacyPhaseComplete(
+          i,
+          phaseData[dataKeys[i] as keyof typeof phaseData],
+        );
+    return acc + (complete ? 1 : 0);
   }, 0);
 
   const progressPercent = Math.round((completedCount / 7) * 100);
+
+  const labelForIndex = (i: number) => {
+    if (isAgent) return AGENT_PHASE_LABELS[i];
+    if (projectType === "cli" && cliLabels[i]) return cliLabels[i];
+    return PHASE_LABELS[i];
+  };
 
   const activeTransition = useMemo(
     () =>
@@ -128,7 +137,13 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
       observer.disconnect();
       window.removeEventListener("resize", updateIndicator);
     };
-  }, [currentPhase, isSidebarCollapsed, phaseData?.screenDesign?.pages?.length]);
+  }, [
+    currentPhase,
+    isSidebarCollapsed,
+    phaseData?.screenDesign?.pages?.length,
+    phaseData?.agentArchitecture,
+    phaseData?.agentBehavior,
+  ]);
 
   if (isSidebarCollapsed) {
     return (
@@ -159,8 +174,7 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
             />
             {Array.from({ length: 7 }).map((_, i) => {
               const Icon = phaseIcons[i];
-              const baseLabel =
-                projectType === "cli" && cliLabels[i] ? cliLabels[i] : PHASE_LABELS[i];
+              const baseLabel = labelForIndex(i);
               const active = currentPhase === i;
 
               return (
@@ -215,18 +229,20 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
         <div className="relative flex flex-col gap-1">
           {Array.from({ length: 7 }).map((_, i) => {
             const Icon = phaseIcons[i];
-            const baseLabel =
-              projectType === "cli" && cliLabels[i]
-                ? cliLabels[i]
-                : PHASE_LABELS[i];
-            const screenCount =
-              i === 4 && phaseData?.screenDesign?.pages?.length
-                ? ` (${phaseData.screenDesign.pages.length})`
-                : "";
-            const label = `${baseLabel}${screenCount}`;
-            const dataKey = PHASE_DATA_KEYS[i];
+            const baseLabel = labelForIndex(i);
+            const finalLabel =
+              !isAgent && i === 4 && phaseData?.screenDesign?.pages?.length
+                ? `${baseLabel} (${phaseData.screenDesign.pages.length})`
+                : baseLabel;
+
+            const dataKey = dataKeys[i];
             const complete = phaseData
-              ? isPhaseComplete(i, phaseData[dataKey])
+              ? isAgent
+                ? isAgentPhaseComplete(i, phaseData as PhaseData)
+                : isLegacyPhaseComplete(
+                    i,
+                    phaseData[dataKey as keyof typeof phaseData],
+                  )
               : false;
             const active = currentPhase === i;
 
@@ -245,7 +261,7 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
                 )}
               >
                 <Icon className="size-4 shrink-0" />
-                <span className="flex-1 truncate text-left">{label}</span>
+                <span className="flex-1 truncate text-left">{finalLabel}</span>
                 {!complete && !active && (
                   <AlertCircle className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                 )}

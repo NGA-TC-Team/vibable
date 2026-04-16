@@ -25,7 +25,11 @@ import { ViewportTabs, VIEWPORT_WIDTHS, type Viewport } from "./viewport-tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useEditorStore } from "@/services/store/editor-store";
 import { LAYOUT_TYPES } from "@/lib/element-prop-schemas";
-import type { MockupPlacement } from "@/hooks/use-mockup.hook";
+import {
+  getViewportContentLeft,
+  getViewportContentWidth,
+  type MockupPlacement,
+} from "@/hooks/use-mockup.hook";
 import type { MockupElement, MockupElementType, ProjectType, ScreenPage, ScreenState } from "@/types/phases";
 
 interface MockupCanvasProps {
@@ -73,6 +77,24 @@ function getPointerCoordinates(event: DragEndEvent) {
   };
 }
 
+function getDragOverCoordinates(event: DragOverEvent) {
+  const translatedRect = event.active.rect.current.translated;
+  if (translatedRect) {
+    return {
+      clientX: translatedRect.left + translatedRect.width / 2,
+      clientY: translatedRect.top + translatedRect.height / 2,
+    };
+  }
+
+  const initialRect = event.active.rect.current.initial;
+  if (!initialRect) return null;
+
+  return {
+    clientX: initialRect.left + initialRect.width / 2,
+    clientY: initialRect.top + initialRect.height / 2,
+  };
+}
+
 function isPointInsideRect(
   point: { clientX: number; clientY: number } | null,
   rect: DOMRect | undefined,
@@ -92,6 +114,12 @@ function getTopLevelElements(elements: MockupElement[]): MockupElement[] {
   return elements.filter((el) => !childIds.has(el.id));
 }
 
+function getTopLevelInsertIndex(elements: MockupElement[], x: number) {
+  const ordered = [...elements].sort((a, b) => a.x - b.x);
+  const nextIndex = ordered.findIndex((element) => x < element.x + element.width / 2);
+  return nextIndex === -1 ? ordered.length : nextIndex;
+}
+
 function createSelectionRect(start: CanvasPoint, current: CanvasPoint): SelectionRect {
   return {
     left: Math.min(start.x, current.x),
@@ -109,6 +137,8 @@ function intersectsSelection(rect: SelectionRect, element: MockupElement) {
     element.y + element.height < rect.top
   );
 }
+
+const FULL_BLEED_TYPES = new Set<MockupElementType>(["header", "bottomNav"]);
 
 export function MockupCanvas({
   page,
@@ -142,6 +172,7 @@ export function MockupCanvas({
   const [dragAnchor, setDragAnchor] = useState<DragAnchor | null>(null);
   const [isOverCanvas, setIsOverCanvas] = useState(false);
   const [overContainerId, setOverContainerId] = useState<string | null>(null);
+  const [topLevelInsertIndex, setTopLevelInsertIndex] = useState<number | null>(null);
   const [marqueeStart, setMarqueeStart] = useState<CanvasPoint | null>(null);
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -161,6 +192,10 @@ export function MockupCanvas({
   const [computedScale, setComputedScale] = useState(0.55);
 
   const canvasWidth = VIEWPORT_WIDTHS[viewport];
+  const contentLeft = getViewportContentLeft(viewport);
+  const contentWidth = getViewportContentWidth(viewport);
+  const maxContentX = contentLeft + contentWidth;
+  const isDesktopFlowViewport = projectType !== "mobile" && viewport === "desktop";
   const minCanvasHeight = projectType === "mobile" || viewport === "mobile" ? 812 : 600;
   const canvasBottomPadding = projectType === "mobile"
     ? 40
@@ -260,11 +295,26 @@ export function MockupCanvas({
       const overElement = elements.find((el) => el.id === overId);
       if (overElement && LAYOUT_TYPES.has(overElement.type)) {
         setOverContainerId(overId);
+        setTopLevelInsertIndex(null);
         return;
       }
     }
     setOverContainerId(null);
-  }, [elements]);
+    if (
+      overId === "mockup-canvas" &&
+      isDesktopFlowViewport &&
+      event.active.data.current?.source === "palette"
+    ) {
+      const pointer = getDragOverCoordinates(event);
+      const point = pointer ? getCanvasPoint(pointer.clientX, pointer.clientY) : null;
+      setTopLevelInsertIndex(
+        point ? getTopLevelInsertIndex(topLevelElements, point.x) : topLevelElements.length,
+      );
+      return;
+    }
+
+    setTopLevelInsertIndex(null);
+  }, [elements, getCanvasPoint, isDesktopFlowViewport, topLevelElements]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over, delta } = event;
@@ -278,6 +328,7 @@ export function MockupCanvas({
     setActiveId(null);
     setIsOverCanvas(false);
     setOverContainerId(null);
+    setTopLevelInsertIndex(null);
     setDragAnchor(null);
 
     const data = active.data.current;
@@ -315,11 +366,18 @@ export function MockupCanvas({
         const logicalY = canvasRect
           ? Math.round((pointer!.clientY - canvasRect.top - anchorY) / scale)
           : 0;
+        const centeredX = contentLeft + Math.round((contentWidth - size.width) / 2);
+        const boundedX = FULL_BLEED_TYPES.has(type)
+          ? 0
+          : viewport === "mobile"
+            ? centeredX
+            : clamp(logicalX, contentLeft, Math.max(contentLeft, maxContentX - size.width));
         const placement: MockupPlacement = {
           sourceViewport: viewport,
-          x: clamp(logicalX, 0, Math.max(0, canvasWidth - size.width)),
+          x: boundedX,
           y: Math.max(0, logicalY),
           width: size.width,
+          insertIndex: isDesktopFlowViewport ? topLevelInsertIndex ?? topLevelElements.length : undefined,
         };
 
         onAddElement(newEl, placement);
@@ -347,7 +405,13 @@ export function MockupCanvas({
       el.id === elId
         ? {
             ...el,
-            x: clamp(logicalX, 0, Math.max(0, canvasWidth - el.width)),
+            x: FULL_BLEED_TYPES.has(el.type)
+              ? 0
+              : clamp(
+                  logicalX,
+                  contentLeft,
+                  Math.max(contentLeft, maxContentX - el.width),
+                ),
             y: Math.max(0, logicalY),
           }
         : el,
@@ -359,6 +423,7 @@ export function MockupCanvas({
     setActiveId(null);
     setIsOverCanvas(false);
     setOverContainerId(null);
+    setTopLevelInsertIndex(null);
     setDragAnchor(null);
   }, []);
 
@@ -421,6 +486,20 @@ export function MockupCanvas({
   const { setNodeRef: setDroppableRef } = useDroppable({ id: "mockup-canvas" });
 
   const selectedCount = selectedIds.length;
+  const desktopInsertIndicatorX = useMemo(() => {
+    if (!isDesktopFlowViewport || topLevelInsertIndex == null) return null;
+    const orderedTopLevel = [...topLevelElements].sort((a, b) => a.x - b.x);
+    if (orderedTopLevel.length === 0) return contentLeft;
+    if (topLevelInsertIndex <= 0) {
+      return Math.max(contentLeft, orderedTopLevel[0]!.x - 8);
+    }
+    if (topLevelInsertIndex >= orderedTopLevel.length) {
+      const last = orderedTopLevel[orderedTopLevel.length - 1]!;
+      return Math.min(maxContentX, last.x + last.width + 8);
+    }
+
+    return clamp(orderedTopLevel[topLevelInsertIndex]!.x - 8, contentLeft, maxContentX);
+  }, [contentLeft, isDesktopFlowViewport, maxContentX, topLevelElements, topLevelInsertIndex]);
 
   const handleCanvasPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || event.target !== event.currentTarget) return;
@@ -522,6 +601,19 @@ export function MockupCanvas({
             height: selectionRect.height,
           }}
         />
+      ) : null}
+      {desktopInsertIndicatorX != null ? (
+        <div
+          className="pointer-events-none absolute bottom-6 top-6 z-20 flex items-start justify-center"
+          style={{ left: desktopInsertIndicatorX, width: 0 }}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="rounded-full border border-blue-400/40 bg-background/90 px-2 py-0.5 text-[10px] font-medium text-blue-600 shadow-sm dark:text-blue-300">
+              삽입
+            </div>
+            <div className="h-full w-0.5 rounded-full bg-blue-500/80 shadow-[0_0_14px_rgba(59,130,246,0.55)]" />
+          </div>
+        </div>
       ) : null}
     </div>
   );

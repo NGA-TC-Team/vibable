@@ -21,17 +21,30 @@ export function ViewportTabs({ value, onChange, projectType }: ViewportTabsProps
       value={value}
       onValueChange={(v) => { if (v) onChange(v as Viewport); }}
       size="sm"
+      className="rounded-3xl bg-muted/60 p-1"
     >
-      <ToggleGroupItem value="mobile" aria-label="모바일">
+      <ToggleGroupItem
+        value="mobile"
+        aria-label="모바일"
+        className="rounded-2xl border border-transparent data-[state=on]:border-border data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+      >
         <Smartphone className="size-4" />
       </ToggleGroupItem>
       {projectType === "web" && (
-        <ToggleGroupItem value="tablet" aria-label="태블릿">
+        <ToggleGroupItem
+          value="tablet"
+          aria-label="태블릿"
+          className="rounded-2xl border border-transparent data-[state=on]:border-border data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+        >
           <Tablet className="size-4" />
         </ToggleGroupItem>
       )}
       {projectType === "web" && (
-        <ToggleGroupItem value="desktop" aria-label="데스크탑">
+        <ToggleGroupItem
+          value="desktop"
+          aria-label="데스크탑"
+          className="rounded-2xl border border-transparent data-[state=on]:border-border data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+        >
           <Monitor className="size-4" />
         </ToggleGroupItem>
       )}

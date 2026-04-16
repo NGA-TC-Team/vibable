@@ -9,7 +9,12 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
-import { PHASE_LABELS, type Project } from "@/types/phases";
+import {
+  AGENT_PHASE_LABELS,
+  PHASE_LABELS,
+  type Persona,
+  type Project,
+} from "@/types/phases";
 
 Font.register({
   family: "NotoSansKR",
@@ -20,6 +25,23 @@ Font.register({
 });
 
 Font.registerHyphenationCallback((word) => [word]);
+
+function normalizePersona(persona: Persona): Persona {
+  return {
+    ...persona,
+    demographics: persona.demographics ?? "",
+    context: persona.context ?? "",
+    techProficiency: persona.techProficiency ?? "",
+    behaviors: persona.behaviors ?? [],
+    motivations: persona.motivations ?? [],
+    needs: persona.needs ?? [],
+    painPoints: persona.painPoints ?? [],
+    frustrations: persona.frustrations ?? [],
+    goals: persona.goals ?? [],
+    successCriteria: persona.successCriteria ?? [],
+    quote: persona.quote ?? "",
+  };
+}
 
 const s = StyleSheet.create({
   page: {
@@ -109,11 +131,21 @@ const s = StyleSheet.create({
   },
 });
 
-const TYPE_LABELS: Record<string, string> = {
+const TYPE_LABELS_LEGACY: Record<string, string> = {
   web: "웹 앱",
   mobile: "모바일 앱",
   cli: "CLI",
+  agent: "AI 에이전트",
 };
+
+function exportTypeLabel(project: Project) {
+  if (project.type === "agent") {
+    return project.agentSubType === "openclaw"
+      ? "OpenClaw 퍼스널 에이전트"
+      : "Claude Subagent";
+  }
+  return TYPE_LABELS_LEGACY[project.type] ?? project.type;
+}
 
 const PRIORITY_LABELS: Record<string, string> = {
   must: "Must",
@@ -146,7 +178,7 @@ function CoverPage({ project }: { project: Project }) {
       {project.phases.overview.elevatorPitch && (
         <Text style={[s.coverSub, { marginBottom: 12 }]}>{project.phases.overview.elevatorPitch}</Text>
       )}
-      <Text style={s.coverSub}>{TYPE_LABELS[project.type] ?? project.type} 기획서</Text>
+      <Text style={s.coverSub}>{exportTypeLabel(project)} 기획서</Text>
       <Text style={s.coverMeta}>
         생성일: {new Date(project.createdAt).toLocaleDateString("ko-KR")}
       </Text>
@@ -281,33 +313,63 @@ function OverviewPage({ project }: { project: Project }) {
 
 function UserScenarioPage({ project }: { project: Project }) {
   const d = project.phases.userScenario;
+  const personas = d.personas.map((persona) => normalizePersona(persona));
+  const renderPersonaList = (title: string, items?: string[]) => {
+    const visibleItems = (items ?? []).filter(Boolean);
+    if (visibleItems.length === 0) return null;
+
+    return (
+      <View style={{ marginTop: 6 }}>
+        <Text style={{ fontSize: 9, color: "#666", marginBottom: 2 }}>{title}:</Text>
+        {visibleItems.map((item, index) => (
+          <Text key={`${title}-${index}`} style={s.listItem}>• {item}</Text>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <Page size="A4" orientation="landscape" style={s.page} wrap>
       <PageHeader projectName={project.name} phaseName={PHASE_LABELS[1]} />
       <Text style={s.sectionTitle}>유저 시나리오</Text>
+      <Text style={s.badge}>
+        {d.personaDetailLevel === "detailed" ? "페르소나 작성 모드: 상세형" : "페르소나 작성 모드: 간편형"}
+      </Text>
 
-      {d.personas.length > 0 && (
+      {personas.length > 0 && (
         <>
           <Text style={s.subTitle}>페르소나</Text>
-          {d.personas.map((p) => (
+          {personas.map((p) => (
             <View key={p.id} style={s.card} wrap={false}>
               <Text style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{p.name} — {p.role}</Text>
-              {p.painPoints.filter(Boolean).length > 0 && (
+              {p.demographics ? (
+                <Text style={{ fontSize: 9, color: "#444", marginBottom: 2 }}>
+                  배경 정보: {p.demographics}
+                </Text>
+              ) : null}
+              {p.techProficiency ? (
+                <Text style={{ fontSize: 9, color: "#444", marginBottom: 2 }}>
+                  디지털 숙련도: {p.techProficiency}
+                </Text>
+              ) : null}
+              {p.context ? (
                 <>
-                  <Text style={{ fontSize: 9, color: "#666", marginBottom: 2 }}>페인 포인트:</Text>
-                  {p.painPoints.filter(Boolean).map((pp, i) => (
-                    <Text key={i} style={s.listItem}>• {pp}</Text>
-                  ))}
+                  <Text style={{ fontSize: 9, color: "#666", marginBottom: 2, marginTop: 4 }}>사용 맥락:</Text>
+                  <Text style={s.paragraph}>{p.context}</Text>
                 </>
-              )}
-              {p.goals.filter(Boolean).length > 0 && (
-                <>
-                  <Text style={{ fontSize: 9, color: "#666", marginBottom: 2 }}>목표:</Text>
-                  {p.goals.filter(Boolean).map((g, i) => (
-                    <Text key={i} style={s.listItem}>• {g}</Text>
-                  ))}
-                </>
-              )}
+              ) : null}
+              {p.quote ? (
+                <Text style={{ fontSize: 9, color: "#444", fontStyle: "italic", marginTop: 2 }}>
+                  &ldquo;{p.quote}&rdquo;
+                </Text>
+              ) : null}
+              {renderPersonaList("목표", p.goals)}
+              {renderPersonaList("페인 포인트", p.painPoints)}
+              {renderPersonaList("핵심 니즈", p.needs)}
+              {renderPersonaList("행동 패턴", p.behaviors)}
+              {renderPersonaList("동기", p.motivations)}
+              {renderPersonaList("좌절 포인트", p.frustrations)}
+              {renderPersonaList("성공 기준", p.successCriteria)}
             </View>
           ))}
         </>
@@ -798,12 +860,72 @@ function DesignSystemPage({ project }: { project: Project }) {
   );
 }
 
+function AgentJsonPdfPage({
+  project,
+  phaseTitle,
+  slice,
+}: {
+  project: Project;
+  phaseTitle: string;
+  slice: unknown;
+}) {
+  const raw = JSON.stringify(slice ?? {}, null, 2);
+  const body = raw.length > 14000 ? `${raw.slice(0, 14000)}\n…(truncated)` : raw;
+  return (
+    <Page size="A4" orientation="landscape" style={s.page} wrap>
+      <PageHeader projectName={project.name} phaseName={phaseTitle} />
+      <Text style={{ fontFamily: "Courier", fontSize: 7, lineHeight: 1.35 }}>{body}</Text>
+      <PageFooter />
+    </Page>
+  );
+}
+
 function PdfDocument({ project }: { project: Project }) {
+  if (project.type === "agent") {
+    const p = project.phases;
+    return (
+      <Document
+        title={`${project.name} 기획서`}
+        author="vibable"
+        subject={`${project.name} — ${exportTypeLabel(project)} 기획서`}
+      >
+        <CoverPage project={project} />
+        <OverviewPage project={project} />
+        <UserScenarioPage project={project} />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={AGENT_PHASE_LABELS[2]}
+          slice={p.agentRequirements}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={AGENT_PHASE_LABELS[3]}
+          slice={p.agentArchitecture}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={AGENT_PHASE_LABELS[4]}
+          slice={p.agentBehavior}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={AGENT_PHASE_LABELS[5]}
+          slice={p.agentTools}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={AGENT_PHASE_LABELS[6]}
+          slice={p.agentSafety}
+        />
+      </Document>
+    );
+  }
+
   return (
     <Document
       title={`${project.name} 기획서`}
       author="vibable"
-      subject={`${project.name} — ${TYPE_LABELS[project.type] ?? project.type} 기획서`}
+      subject={`${project.name} — ${exportTypeLabel(project)} 기획서`}
     >
       <CoverPage project={project} />
       <OverviewPage project={project} />

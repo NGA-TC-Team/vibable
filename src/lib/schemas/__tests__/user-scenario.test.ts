@@ -6,6 +6,7 @@ describe("userScenarioSchema", () => {
     const result = userScenarioSchema.parse({});
 
     expect(result).toEqual({
+      personaDetailLevel: "simple",
       personas: [],
       userStories: [],
       successScenarios: [],
@@ -15,8 +16,24 @@ describe("userScenarioSchema", () => {
 
   it("parses valid data with personas and stories", () => {
     const valid = {
+      personaDetailLevel: "detailed",
       personas: [
-        { id: "p1", name: "Alice", role: "Dev", painPoints: ["slow CI"], goals: ["fast builds"] },
+        {
+          id: "p1",
+          name: "Alice",
+          role: "Dev",
+          demographics: "B2B SaaS team lead",
+          context: "Works across multiple dashboards every morning",
+          techProficiency: "Advanced",
+          behaviors: ["Checks status before standup"],
+          motivations: ["Reduce repetitive work"],
+          needs: ["Clear summary view"],
+          painPoints: ["slow CI"],
+          frustrations: ["Has to refresh multiple tools"],
+          goals: ["fast builds"],
+          successCriteria: ["Find blockers within 30 seconds"],
+          quote: "I need signal, not noise.",
+        },
       ],
       userStories: [
         { id: "s1", personaId: "p1", asA: "developer", iWant: "fast CI", soThat: "I ship faster" },
@@ -31,7 +48,7 @@ describe("userScenarioSchema", () => {
 
   it("rejects invalid persona structure", () => {
     const result = userScenarioSchema.safeParse({
-      personas: [{ name: 123 }],
+      personas: [{ name: 123, behaviors: "not-an-array" }],
     });
 
     expect(result.success).toBe(false);

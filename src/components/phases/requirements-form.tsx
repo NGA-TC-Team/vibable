@@ -45,8 +45,17 @@ const nfrCategories = {
 
 const PAGE_SIZE = 3;
 
-export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
-  const { data, patchData } = usePhaseData("requirements");
+type RequirementsSliceKey = "requirements" | "agentRequirements";
+
+export function RequirementsForm({
+  disabled = false,
+  phaseSlice = "requirements",
+}: {
+  disabled?: boolean;
+  /** 에이전트 프로젝트 Phase 2는 agentRequirements에 저장 */
+  phaseSlice?: RequirementsSliceKey;
+}) {
+  const { data, patchData } = usePhaseData(phaseSlice);
   const [funcSearch, setFuncSearch] = useState("");
   const [funcPage, setFuncPage] = useState(1);
   const [nfSearch, setNfSearch] = useState("");

@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -9,61 +10,92 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePhaseData } from "@/hooks/use-phase.hook";
+import type { Persona } from "@/types/phases";
+
+function normalizePersona(persona: Persona): Persona {
+  return {
+    ...persona,
+    demographics: persona.demographics ?? "",
+    context: persona.context ?? "",
+    techProficiency: persona.techProficiency ?? "",
+    behaviors: persona.behaviors ?? [],
+    motivations: persona.motivations ?? [],
+    needs: persona.needs ?? [],
+    painPoints: persona.painPoints ?? [],
+    frustrations: persona.frustrations ?? [],
+    goals: persona.goals ?? [],
+    successCriteria: persona.successCriteria ?? [],
+    quote: persona.quote ?? "",
+  };
+}
 
 export function UserScenarioPreview() {
   const { data } = usePhaseData("userScenario");
   if (!data) return null;
+  const personas = data.personas.map((persona) => normalizePersona(persona));
 
   const personaName = (personaId: string) =>
-    data.personas.find((p) => p.id === personaId)?.name ?? "—";
+    personas.find((p) => p.id === personaId)?.name ?? "—";
+  const hasDetailedPersonaData = personas.some(
+    (persona) =>
+      Boolean(persona.demographics || persona.context || persona.techProficiency || persona.quote) ||
+      persona.behaviors.some(Boolean) ||
+      persona.motivations.some(Boolean) ||
+      persona.needs.some(Boolean) ||
+      persona.frustrations.some(Boolean) ||
+      persona.successCriteria.some(Boolean),
+  );
 
   return (
     <div className="space-y-6 text-sm">
       <section className="space-y-3">
         <h2 className="text-base font-semibold">페르소나</h2>
-        {data.personas.length === 0 ? (
+        {personas.length === 0 ? (
           <p className="text-muted-foreground/50 italic">페르소나를 추가하세요</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>이름</TableHead>
-                <TableHead>역할</TableHead>
-                <TableHead>페인 포인트</TableHead>
-                <TableHead>목표</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.personas.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name || "이름 없음"}</TableCell>
-                  <TableCell>{p.role}</TableCell>
-                  <TableCell>
-                    {p.painPoints.filter(Boolean).length > 0 ? (
-                      <ul className="list-disc pl-4">
-                        {p.painPoints.filter(Boolean).map((pp, i) => (
-                          <li key={i}>{pp}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {p.goals.filter(Boolean).length > 0 ? (
-                      <ul className="list-disc pl-4">
-                        {p.goals.filter(Boolean).map((g, i) => (
-                          <li key={i}>{g}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="space-y-3">
+            {personas.map((p) => (
+              <div key={p.id} className="space-y-3 rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-semibold">{p.name || "이름 없음"}</h3>
+                  <Badge variant="secondary">{p.role || "역할 없음"}</Badge>
+                  {data.personaDetailLevel === "detailed" || hasDetailedPersonaData ? (
+                    <Badge variant="outline">상세형</Badge>
+                  ) : null}
+                </div>
+
+                {(p.demographics || p.techProficiency) ? (
+                  <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+                    {p.demographics ? <p><span className="font-medium text-foreground">배경:</span> {p.demographics}</p> : null}
+                    {p.techProficiency ? <p><span className="font-medium text-foreground">디지털 숙련도:</span> {p.techProficiency}</p> : null}
+                  </div>
+                ) : null}
+
+                {p.context ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">사용 맥락</p>
+                    <p className="text-xs leading-5 text-muted-foreground">{p.context}</p>
+                  </div>
+                ) : null}
+
+                {p.quote ? (
+                  <blockquote className="rounded-lg border-l-2 border-primary/40 bg-muted/20 px-3 py-2 text-xs italic text-muted-foreground">
+                    &ldquo;{p.quote}&rdquo;
+                  </blockquote>
+                ) : null}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <PersonaList title="목표" items={p.goals} />
+                  <PersonaList title="페인 포인트" items={p.painPoints} />
+                  <PersonaList title="핵심 니즈" items={p.needs} />
+                  <PersonaList title="행동 패턴" items={p.behaviors} />
+                  <PersonaList title="동기" items={p.motivations} />
+                  <PersonaList title="좌절 포인트" items={p.frustrations} />
+                  <PersonaList title="성공 기준" items={p.successCriteria} />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </section>
 
@@ -134,6 +166,22 @@ export function UserScenarioPreview() {
           </Table>
         </section>
       )}
+    </div>
+  );
+}
+
+function PersonaList({ title, items }: { title: string; items: string[] }) {
+  const visibleItems = items.filter(Boolean);
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-foreground">{title}</p>
+      <ul className="list-disc pl-4 text-xs leading-5 text-muted-foreground">
+        {visibleItems.map((item, index) => (
+          <li key={`${title}-${index}`}>{item}</li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -43,32 +43,51 @@ export function getExampleProjectData(): ExampleProjectData {
         techStack: "",
       },
       userScenario: {
+        personaDetailLevel: "simple",
         personas: [
           {
             id: crypto.randomUUID(),
             name: "김민수",
             role: "IT 기업 마케팅 매니저 (32세)",
+            demographics: "",
+            context: "",
+            techProficiency: "",
+            behaviors: [],
+            motivations: [],
+            needs: [],
             painPoints: [
               "할 일이 메일·메신저·메모에 흩어져 빠뜨리는 업무가 많다",
               "기존 도구는 설정이 복잡해 팀원이 따라오지 않는다",
             ],
+            frustrations: [],
             goals: [
               "하나의 앱에서 모든 업무를 한눈에 파악하고 싶다",
               "팀원에게 간단히 할 일을 할당하고 진행 상황을 확인하고 싶다",
             ],
+            successCriteria: [],
+            quote: "",
           },
           {
             id: crypto.randomUUID(),
             name: "이서연",
             role: "경영학과 대학생 (22세)",
+            demographics: "",
+            context: "",
+            techProficiency: "",
+            behaviors: [],
+            motivations: [],
+            needs: [],
             painPoints: [
               "과제 마감일을 놓쳐 감점당한 경험이 있다",
               "캘린더 앱만으로는 세부 할 일을 관리하기 어렵다",
             ],
+            frustrations: [],
             goals: [
               "마감일 기반으로 자동 정렬되는 할 일 목록이 필요하다",
               "반복 과제(주간 리포트 등)를 자동 생성하고 싶다",
             ],
+            successCriteria: [],
+            quote: "",
           },
         ],
         userStories: [

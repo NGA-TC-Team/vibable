@@ -54,8 +54,17 @@ export interface Persona {
   id: string;
   name: string;
   role: string;
+  demographics: string;
+  context: string;
+  techProficiency: string;
+  behaviors: string[];
+  motivations: string[];
+  needs: string[];
   painPoints: string[];
+  frustrations: string[];
   goals: string[];
+  successCriteria: string[];
+  quote: string;
 }
 
 export interface UserStory {
@@ -67,6 +76,7 @@ export interface UserStory {
 }
 
 export interface UserScenarioPhase {
+  personaDetailLevel: "simple" | "detailed";
   personas: Persona[];
   userStories: UserStory[];
   successScenarios: string[];
@@ -383,6 +393,228 @@ export type PhaseMemos = Record<number, Memo[]>;
 
 // ─── 전체 페이즈 데이터 ───
 
+// ─── AI 에이전트 전용 페이즈 (Phase 2~6, type === "agent") ───
+
+export type AgentSubType = "claude-subagent" | "openclaw";
+
+export interface AgentRequirementsClaudeExtension {
+  autonomyLevel: "read-only" | "suggest" | "plan-then-execute" | "autonomous";
+  permissionBoundary: string;
+  contextScope: "project" | "user" | "both";
+  maxConcurrentAgents?: number;
+}
+
+export interface AgentRequirementsOpenclawExtension {
+  autonomyLevel: "passive" | "reactive" | "proactive" | "autonomous";
+  alwaysOnRequired: boolean;
+  messagingChannels: string[];
+  hardwareTarget: string;
+  sandboxRequired: boolean;
+}
+
+/** Phase 2 (agent): 공통 요구사항 + 하위 유형 확장 */
+export interface AgentRequirementsPhase extends RequirementsPhase {
+  claude?: AgentRequirementsClaudeExtension;
+  openclaw?: AgentRequirementsOpenclawExtension;
+}
+
+export interface AgentDefinition {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  model: "inherit" | "opus" | "sonnet" | "haiku";
+  toolAccess: string[];
+  permissionMode: "default" | "plan" | "bypassPermissions";
+  memoryScope: "user" | "project" | "none";
+}
+
+export interface PipelineStep {
+  id: string;
+  from: string;
+  to: string;
+  trigger: string;
+  dataFormat: string;
+}
+
+export interface ClaudePipelinePhase {
+  pattern: "single" | "orchestrator-subagent" | "explore-plan-execute" | "custom";
+  agents: AgentDefinition[];
+  delegationRules: string[];
+  dataFlow: PipelineStep[];
+}
+
+export interface OpenClawAgentConfig {
+  id: string;
+  name: string;
+  workspace: string;
+  channels: string[];
+}
+
+export interface ChannelRoute {
+  id: string;
+  channel: string;
+  agentId: string;
+  sessionType: "private" | "group";
+}
+
+export interface OpenClawArchitecturePhase {
+  workspacePath: string;
+  sandboxConfig: {
+    enabled: boolean;
+    workspaceAccess: "ro" | "rw";
+    networkAccess: boolean;
+  };
+  multiAgent: boolean;
+  agents?: OpenClawAgentConfig[];
+  channelRouting?: ChannelRoute[];
+}
+
+export type AgentArchitecturePhase =
+  | { kind: "claude-subagent"; claude: ClaudePipelinePhase }
+  | { kind: "openclaw"; openclaw: OpenClawArchitecturePhase };
+
+export interface ClaudeAgentBehavior {
+  agentId: string;
+  systemPrompt: string;
+  coreExpertise: string[];
+  responsibilities: string[];
+  outputFormat: string;
+  constraints: string[];
+  color: string;
+}
+
+export type OpenClawTonePreset = "efficient" | "thoughtful" | "friendly" | "custom";
+
+export interface HeartbeatTask {
+  id: string;
+  name: string;
+  schedule: string;
+  action: string;
+  enabled: boolean;
+}
+
+export interface OpenClawBehaviorPhase {
+  soul: {
+    personality: string;
+    communicationStyle: string[];
+    values: string[];
+    boundaries: string[];
+    tonePreset?: OpenClawTonePreset;
+  };
+  identity: {
+    agentName: string;
+    role: string;
+    selfIntroduction: string;
+  };
+  agents: {
+    safetyDefaults: string[];
+    sessionStartRules: string[];
+    memoryRules: string[];
+    sharedSpaceRules: string[];
+  };
+  user: {
+    name: string;
+    timezone: string;
+    background: string;
+    preferences: string[];
+    workContext: string;
+  };
+  heartbeat: HeartbeatTask[];
+}
+
+export type AgentBehaviorPhase =
+  | { kind: "claude-subagent"; behaviors: ClaudeAgentBehavior[] }
+  | { kind: "openclaw"; openclaw: OpenClawBehaviorPhase };
+
+export interface HookDefinition {
+  id: string;
+  agentId: string;
+  hookType: "PreToolUse" | "PostToolUse";
+  matcher: string;
+  action: string;
+  purpose: string;
+}
+
+export interface McpServerConfig {
+  id: string;
+  name: string;
+  url: string;
+  description: string;
+}
+
+export interface ClaudeToolsPhase {
+  globalTools: string[];
+  agentTools: { agentId: string; tools: string[] }[];
+  hooks: HookDefinition[];
+  mcpServers?: McpServerConfig[];
+}
+
+export interface ChannelConfig {
+  id: string;
+  platform:
+    | "whatsapp"
+    | "telegram"
+    | "discord"
+    | "slack"
+    | "signal"
+    | "teams"
+    | "irc"
+    | "other";
+  identifier: string;
+  purpose: string;
+  allowedContacts?: string[];
+}
+
+export interface SkillConfig {
+  id: string;
+  name: string;
+  source: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface OpenClawToolsPhase {
+  channels: ChannelConfig[];
+  tools: {
+    enabled: string[];
+    disabled: string[];
+    notes: string;
+  };
+  skills: SkillConfig[];
+  gatewayConfig: {
+    bindHost: string;
+    port: number;
+    authToken?: string;
+  };
+}
+
+export type AgentToolsPhase =
+  | { kind: "claude-subagent"; claude: ClaudeToolsPhase }
+  | { kind: "openclaw"; openclaw: OpenClawToolsPhase };
+
+export interface RiskScenario {
+  id: string;
+  scenario: string;
+  impact: "low" | "medium" | "high" | "critical";
+  mitigation: string;
+}
+
+export interface AgentTestCase {
+  id: string;
+  name: string;
+  input: string;
+  expectedBehavior: string;
+  forbiddenBehavior: string;
+}
+
+export interface AgentSafetyPhase {
+  riskScenarios: RiskScenario[];
+  humanInTheLoop: string[];
+  testCases: AgentTestCase[];
+  rollbackPlan: string;
+}
+
 export interface PhaseData {
   overview: OverviewPhase;
   userScenario: UserScenarioPhase;
@@ -391,6 +623,12 @@ export interface PhaseData {
   screenDesign: ScreenDesignPhase;
   dataModel: DataModelPhase;
   designSystem: DesignSystemPhase;
+  /** type === "agent"일 때 Phase 2~6 원천 데이터 */
+  agentRequirements?: AgentRequirementsPhase;
+  agentArchitecture?: AgentArchitecturePhase;
+  agentBehavior?: AgentBehaviorPhase;
+  agentTools?: AgentToolsPhase;
+  agentSafety?: AgentSafetyPhase;
   memos: PhaseMemos;
 }
 
@@ -403,13 +641,15 @@ export interface Workspace {
   updatedAt: number;
 }
 
-export type ProjectType = "web" | "mobile" | "cli";
+export type ProjectType = "web" | "mobile" | "cli" | "agent";
 
 export interface Project {
   id: string;
   workspaceId: string;
   name: string;
   type: ProjectType;
+  /** type === "agent"일 때 필수 */
+  agentSubType?: AgentSubType;
   currentPhase: number;
   phases: PhaseData;
   createdAt: number;
@@ -429,6 +669,29 @@ export const PHASE_KEYS = [
 ] as const;
 
 export type PhaseKey = (typeof PHASE_KEYS)[number];
+
+/** 에이전트 프로젝트 단일 페이즈 JSON / 붙여넣기용 키 (인덱스 0~6) */
+export const AGENT_PHASE_KEYS = [
+  "overview",
+  "userScenario",
+  "agentRequirements",
+  "agentArchitecture",
+  "agentBehavior",
+  "agentTools",
+  "agentSafety",
+] as const;
+
+export type AgentPhaseKey = (typeof AGENT_PHASE_KEYS)[number];
+
+export const AGENT_PHASE_LABELS: Record<number, string> = {
+  0: "기획 개요",
+  1: "유저 시나리오",
+  2: "에이전트 요구사항",
+  3: "에이전트 아키텍처",
+  4: "에이전트 행동 설계",
+  5: "연동 & 도구 설계",
+  6: "안전 & 테스트 설계",
+};
 
 export const PHASE_LABELS: Record<number, string> = {
   0: "기획 개요",

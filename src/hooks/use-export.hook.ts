@@ -3,35 +3,43 @@
 import { toast } from "sonner";
 import { stripMemos } from "@/lib/strip-memos";
 import { generateDesignMd } from "@/components/export/design-md-generator";
-import { generatePhaseMarkdown } from "@/components/export/phase-md-generator";
+import {
+  generatePhaseMarkdown,
+  type PhaseMarkdownExportKey,
+} from "@/components/export/phase-md-generator";
 import { APP_VERSION, SCHEMA_VERSION } from "@/lib/constants";
-import { PHASE_KEYS, type Project, type PhaseKey } from "@/types/phases";
+import type { Project } from "@/types/phases";
 import { downloadBlob } from "@/lib/download";
+import { buildClaudeAgentZipEntries } from "@/components/export/claude-agent-generator";
+import { buildOpenClawWorkspaceFiles } from "@/components/export/openclaw-workspace-generator";
+import { zipStringFiles } from "@/lib/agent-zip";
+import type { ExportJsonPhaseScope } from "@/lib/export-phase-scope";
 
 export function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 }
 
 export function useExport() {
-  const exportJson = (project: Project, scope: "full" | PhaseKey = "full") => {
+  const exportJson = (project: Project, scope: "full" | ExportJsonPhaseScope = "full") => {
     const stripped = stripMemos(project.phases);
+    const metaBase = {
+      appVersion: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      projectType: project.type,
+      schemaVersion: SCHEMA_VERSION,
+      ...(project.type === "agent" && project.agentSubType
+        ? { agentSubType: project.agentSubType }
+        : {}),
+    };
     const payload =
       scope === "full"
         ? {
-            _meta: {
-              appVersion: APP_VERSION,
-              exportedAt: new Date().toISOString(),
-              projectType: project.type,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            _meta: metaBase,
             ...stripped,
           }
         : {
             _meta: {
-              appVersion: APP_VERSION,
-              exportedAt: new Date().toISOString(),
-              projectType: project.type,
-              schemaVersion: SCHEMA_VERSION,
+              ...metaBase,
               phase: scope,
             },
             [scope]: stripped[scope as keyof typeof stripped],
@@ -65,9 +73,26 @@ export function useExport() {
     }
   };
 
+  const exportAgentZip = (project: Project) => {
+    if (project.type !== "agent" || !project.agentSubType) {
+      toast.error("에이전트 프로젝트만 번들 ZIP을 받을 수 있습니다");
+      return;
+    }
+    const files =
+      project.agentSubType === "claude-subagent"
+        ? buildClaudeAgentZipEntries(project)
+        : buildOpenClawWorkspaceFiles(project);
+    const zip = zipStringFiles(files);
+    const blob = new Blob([new Uint8Array(zip)], { type: "application/zip" });
+    const suffix =
+      project.agentSubType === "claude-subagent" ? "claude-agents" : "openclaw-workspace";
+    downloadBlob(blob, `${project.name}_${suffix}_${timestamp()}.zip`);
+    toast.success("ZIP 파일이 다운로드되었습니다");
+  };
+
   const exportPhaseMarkdown = async (
     project: Project,
-    phaseKey: Exclude<PhaseKey, "screenDesign">,
+    phaseKey: PhaseMarkdownExportKey,
     mode: "copy" | "download",
   ) => {
     const markdown = generatePhaseMarkdown(project.name, project.phases, phaseKey);
@@ -88,5 +113,5 @@ export function useExport() {
     toast.success("마크다운 파일이 다운로드되었습니다");
   };
 
-  return { exportJson, exportDesignMd, exportPdf, exportPhaseMarkdown };
+  return { exportJson, exportDesignMd, exportPdf, exportPhaseMarkdown, exportAgentZip };
 }

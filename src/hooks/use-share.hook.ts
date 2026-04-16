@@ -4,7 +4,7 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import { stripMemos } from "@/lib/strip-memos";
 import { phaseDataSchema } from "@/lib/schemas/phase-data";
 import { SHARE_URL_MAX_BYTES } from "@/lib/constants";
-import type { Project, ProjectType, PhaseData } from "@/types/phases";
+import type { AgentSubType, PhaseData, Project, ProjectType } from "@/types/phases";
 
 interface ShareResult {
   url: string | null;
@@ -16,7 +16,11 @@ export function generateShareUrl(project: Project): ShareResult {
   const json = JSON.stringify(stripped);
   const compressed = compressToEncodedURIComponent(json);
 
-  const urlPath = `/workspace/shared?data=${compressed}&name=${encodeURIComponent(project.name)}&type=${project.type}`;
+  const subQs =
+    project.type === "agent" && project.agentSubType
+      ? `&sub=${encodeURIComponent(project.agentSubType)}`
+      : "";
+  const urlPath = `/workspace/shared?data=${compressed}&name=${encodeURIComponent(project.name)}&type=${project.type}${subQs}`;
   const fullUrl = `${window.location.origin}${urlPath}`;
 
   if (new Blob([fullUrl]).size > SHARE_URL_MAX_BYTES) {
@@ -29,6 +33,7 @@ export function generateShareUrl(project: Project): ShareResult {
 export interface ParsedShare {
   name: string;
   type: ProjectType;
+  agentSubType?: AgentSubType;
   phases: PhaseData;
 }
 
@@ -38,6 +43,7 @@ export function parseShareUrl(
   const data = searchParams.get("data");
   const name = searchParams.get("name");
   const type = searchParams.get("type") as ProjectType | null;
+  const sub = searchParams.get("sub") as AgentSubType | null;
 
   if (!data || !name || !type) return null;
 
@@ -49,9 +55,15 @@ export function parseShareUrl(
     const result = phaseDataSchema.safeParse({ ...parsed, memos: {} });
     if (!result.success) return null;
 
+    const agentSubType =
+      type === "agent" && sub && ["claude-subagent", "openclaw"].includes(sub)
+        ? sub
+        : undefined;
+
     return {
       name: decodeURIComponent(name),
       type,
+      ...(agentSubType ? { agentSubType } : {}),
       phases: result.data as unknown as PhaseData,
     };
   } catch {

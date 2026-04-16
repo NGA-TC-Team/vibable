@@ -1,4 +1,4 @@
-import { Globe, Smartphone, Terminal } from "lucide-react";
+import { Bot, Globe, Smartphone, Terminal } from "lucide-react";
 import type { ProjectType } from "@/types/phases";
 
 export interface ProjectTypeOption {
@@ -26,5 +26,11 @@ export const PROJECT_TYPES: ProjectTypeOption[] = [
     label: "CLI",
     desc: "커맨드라인 도구",
     icon: <Terminal className="size-5" />,
+  },
+  {
+    value: "agent",
+    label: "AI 에이전트",
+    desc: "Claude Subagent · OpenClaw",
+    icon: <Bot className="size-5" />,
   },
 ];

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
+  Bot,
   Globe,
   Smartphone,
   Terminal,
@@ -37,6 +38,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import type { Project, ProjectType } from "@/types/phases";
 import { PHASE_KEYS } from "@/types/phases";
+import { isAgentPhaseComplete } from "@/lib/phase-nav-config";
 
 const typeConfig: Record<
   ProjectType,
@@ -53,12 +55,20 @@ const typeConfig: Record<
     icon: <Terminal className="size-3" />,
     variant: "outline",
   },
+  agent: {
+    label: "에이전트",
+    icon: <Bot className="size-3" />,
+    variant: "secondary",
+  },
 };
 
 function getCompletedPhaseCount(project: Project): number {
   const { phases } = project;
-  let count = 0;
+  if (project.type === "agent") {
+    return [0, 1, 2, 3, 4, 5, 6].filter((i) => isAgentPhaseComplete(i, phases)).length;
+  }
 
+  let count = 0;
   if (phases.overview.projectName) count++;
   if (phases.userScenario.personas.length > 0) count++;
   if (phases.requirements.functional.length > 0) count++;
@@ -66,7 +76,6 @@ function getCompletedPhaseCount(project: Project): number {
   if (phases.screenDesign.pages.length > 0) count++;
   if (phases.dataModel.entities.length > 0) count++;
   if (phases.designSystem.visualTheme.mood) count++;
-
   return count;
 }
 

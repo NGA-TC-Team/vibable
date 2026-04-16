@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { stripMemos } from "../strip-memos";
 import { createDefaultPhaseData } from "../schemas/phase-data";
+import type { PhaseData } from "@/types/phases";
 
 const PHASE_KEYS = [
   "overview",
@@ -14,28 +15,28 @@ const PHASE_KEYS = [
 
 describe("stripMemos", () => {
   it("removes the memos key from phase data", () => {
-    const data = createDefaultPhaseData();
+    const data = createDefaultPhaseData() as PhaseData;
     const result = stripMemos(data);
 
     expect(result).not.toHaveProperty("memos");
   });
 
   it("does not mutate the original object", () => {
-    const data = createDefaultPhaseData();
+    const data = createDefaultPhaseData() as PhaseData;
     stripMemos(data);
 
     expect(data).toHaveProperty("memos");
   });
 
   it("invariant: result keys never contain 'memos'", () => {
-    const data = createDefaultPhaseData();
+    const data = createDefaultPhaseData() as PhaseData;
     const result = stripMemos(data);
 
     expect(Object.keys(result)).not.toContain("memos");
   });
 
   it("preserves all 7 phase keys", () => {
-    const data = createDefaultPhaseData();
+    const data = createDefaultPhaseData() as PhaseData;
     const result = stripMemos(data);
     const keys = Object.keys(result);
 

@@ -18,12 +18,18 @@ import {
 } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEditorStore } from "@/services/store/editor-store";
-import { templatesByPhase } from "@/lib/templates";
+import { getTemplates } from "@/lib/templates";
 import { AiProviderLinks } from "./ai-provider-links";
 
 export function TemplatePromptModal() {
   const currentPhase = useEditorStore((s) => s.currentPhase);
-  const templates = templatesByPhase[currentPhase] ?? [];
+  const projectType = useEditorStore((s) => s.projectType);
+  const agentSubType = useEditorStore((s) => s.agentSubType);
+  const templates = getTemplates({
+    projectType,
+    agentSubType,
+    phase: currentPhase,
+  });
 
   const copyPrompt = async (prompt: string) => {
     await navigator.clipboard.writeText(prompt);

@@ -20,6 +20,7 @@ export function EditorClient({ projectId }: EditorClientProps) {
   const setPhaseData = useEditorStore((s) => s.setPhaseData);
   const setPhase = useEditorStore((s) => s.setPhase);
   const setProjectType = useEditorStore((s) => s.setProjectType);
+  const setAgentSubType = useEditorStore((s) => s.setAgentSubType);
   const reset = useEditorStore((s) => s.reset);
 
   const [phase, setPhaseUrl] = useQueryState(
@@ -33,6 +34,7 @@ export function EditorClient({ projectId }: EditorClientProps) {
     if (project) {
       setPhaseData(project.phases);
       setProjectType(project.type);
+      setAgentSubType(project.agentSubType ?? null);
       setPhase(phase);
     }
     return () => {

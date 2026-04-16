@@ -347,9 +347,11 @@ function ElementListCard({
             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               {ELEMENT_LABELS[element.type] ?? element.type}
             </span>
-            <span className="text-[10px] text-muted-foreground">
-              {element.width}x{element.height}
-            </span>
+            {!isLayout ? (
+              <span className="text-[10px] text-muted-foreground">
+                {element.width}x{element.height}
+              </span>
+            ) : null}
           </div>
           {!disabled && (
             <Button

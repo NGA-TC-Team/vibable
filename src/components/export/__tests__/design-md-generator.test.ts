@@ -45,7 +45,12 @@ describe("generateDesignMd", () => {
   it("renders component sections when data exists", () => {
     const ds = emptyDesignSystem();
     ds.components = [
-      { component: "Button", variants: "primary, ghost", borderRadius: "8px" },
+      {
+        component: "Button",
+        category: "button",
+        variants: "primary, ghost",
+        borderRadius: "8px",
+      },
     ];
 
     const md = generateDesignMd("TestApp", ds);

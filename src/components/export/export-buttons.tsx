@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileJson, FileText, FileType } from "lucide-react";
+import { Download, FileJson, FileText, FileType, FolderArchive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useExport } from "@/hooks/use-export.hook";
 import { useEditorStore } from "@/services/store/editor-store";
-import { PHASE_KEYS, PHASE_LABELS, type Project } from "@/types/phases";
+import { getPhaseExportScope } from "@/lib/export-phase-scope";
+import { AGENT_PHASE_LABELS, PHASE_LABELS, type Project } from "@/types/phases";
 
 interface ExportButtonsProps {
   project: Project;
@@ -19,13 +20,16 @@ interface ExportButtonsProps {
 }
 
 export function ExportButtons({ project, onFlushSave }: ExportButtonsProps) {
-  const { exportJson, exportDesignMd, exportPdf } = useExport();
+  const { exportJson, exportDesignMd, exportPdf, exportAgentZip } = useExport();
   const currentPhase = useEditorStore((s) => s.currentPhase);
 
   const handleExport = (fn: () => void) => {
     onFlushSave?.();
     fn();
   };
+
+  const phaseLabel =
+    project.type === "agent" ? AGENT_PHASE_LABELS[currentPhase] : PHASE_LABELS[currentPhase];
 
   return (
     <DropdownMenu>
@@ -45,15 +49,26 @@ export function ExportButtons({ project, onFlushSave }: ExportButtonsProps) {
         <DropdownMenuItem
           onSelect={() =>
             handleExport(() =>
-              exportJson(project, PHASE_KEYS[currentPhase]),
+              exportJson(project, getPhaseExportScope(project, currentPhase)),
             )
           }
         >
           <FileJson className="size-4" />
-          JSON — {PHASE_LABELS[currentPhase]}
+          JSON — {phaseLabel}
         </DropdownMenuItem>
+        {project.type === "agent" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => handleExport(() => exportAgentZip(project))}
+            >
+              <FolderArchive className="size-4" />
+              에이전트 번들 ZIP
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
-        {project.type !== "cli" && (
+        {project.type !== "cli" && project.type !== "agent" && (
           <DropdownMenuItem
             onSelect={() => handleExport(() => exportDesignMd(project))}
           >

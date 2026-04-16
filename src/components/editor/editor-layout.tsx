@@ -21,11 +21,13 @@ import { PreviewPanel } from "./preview-panel";
 import { FormPanel } from "./form-panel";
 import { SaveStatus } from "./save-status";
 import { MemoModal } from "./memo-modal";
+import { SidebarMeteor } from "./sidebar-meteor";
 import { ExportButtons } from "@/components/export/export-buttons";
 import { ShareButton } from "./share-button";
 import { useEditorStore } from "@/services/store/editor-store";
 import { useExport } from "@/hooks/use-export.hook";
-import { PHASE_KEYS } from "@/types/phases";
+import { getPhaseExportScope } from "@/lib/export-phase-scope";
+import type { PhaseMarkdownExportKey } from "@/components/export/phase-md-generator";
 import type { Project } from "@/types/phases";
 
 interface EditorLayoutProps {
@@ -39,12 +41,12 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
   const setPrintPreview = useEditorStore((s) => s.setPrintPreview);
   const currentPhase = useEditorStore((s) => s.currentPhase);
   const { exportPhaseMarkdown } = useExport();
-  const currentPhaseKey = PHASE_KEYS[currentPhase];
-  const canExportMarkdown = currentPhase !== 4;
+  const currentPhaseKey = getPhaseExportScope(project, currentPhase);
+  const canExportMarkdown = project.type === "agent" || currentPhase !== 4;
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+      <header className="flex shrink-0 items-center gap-2 border-b px-6 py-3.5 sm:px-8 sm:py-4">
         <Link
           href="/workspace"
           className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
@@ -81,11 +83,14 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className={isSidebarCollapsed ? "hidden w-14 shrink-0 border-r p-3 transition-all md:block" : "hidden w-48 shrink-0 border-r p-3 transition-all md:block"}>
-          <PhaseNav
-            projectType={project.type}
-            onPhaseChange={onPhaseChange}
-          />
+        <aside className={isSidebarCollapsed ? "relative hidden w-14 shrink-0 overflow-hidden border-r p-3 transition-all md:block" : "relative hidden w-48 shrink-0 overflow-hidden border-r p-3 transition-all md:block"}>
+          <div className="relative z-10 h-full">
+            <PhaseNav
+              projectType={project.type}
+              onPhaseChange={onPhaseChange}
+            />
+          </div>
+          <SidebarMeteor collapsed={isSidebarCollapsed} />
         </aside>
 
         <ResizablePanelGroup orientation="horizontal" className="flex-1">
@@ -107,7 +112,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
                           onSelect={() =>
                             exportPhaseMarkdown(
                               project,
-                              currentPhaseKey as Exclude<typeof currentPhaseKey, "screenDesign">,
+                              currentPhaseKey as PhaseMarkdownExportKey,
                               "copy",
                             )
                           }
@@ -119,7 +124,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
                           onSelect={() =>
                             exportPhaseMarkdown(
                               project,
-                              currentPhaseKey as Exclude<typeof currentPhaseKey, "screenDesign">,
+                              currentPhaseKey as PhaseMarkdownExportKey,
                               "download",
                             )
                           }

@@ -26,6 +26,7 @@ const CONTENT_MAX_WIDTH: Record<MockupViewportKey, number> = {
 
 const ALL_VIEWPORTS: MockupViewportKey[] = ["mobile", "tablet", "desktop"];
 const ALL_STATES: ScreenState[] = ["idle", "loading", "offline", "error"];
+const FLOW_GAP = 16;
 
 const FULL_BLEED_TYPES = new Set<MockupElementType>(["header", "bottomNav"]);
 const CONTAINER_SCALE_TYPES = new Set<MockupElementType>([
@@ -61,6 +62,7 @@ export interface MockupPlacement {
   x: number;
   y: number;
   width: number;
+  insertIndex?: number;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -72,7 +74,7 @@ export function getViewportContentWidth(vp: MockupViewportKey) {
   return Math.min(CONTENT_MAX_WIDTH[vp], viewportWidth - VIEWPORT_GUTTERS[vp] * 2);
 }
 
-function getViewportContentLeft(vp: MockupViewportKey) {
+export function getViewportContentLeft(vp: MockupViewportKey) {
   return Math.round((VIEWPORT_WIDTHS[vp] - getViewportContentWidth(vp)) / 2);
 }
 
@@ -126,6 +128,8 @@ function adjustForViewport(
   const maxContentX = contentLeft + Math.max(0, contentWidth - width);
   const x = FULL_BLEED_TYPES.has(element.type)
     ? 0
+    : vp === "desktop" && placement?.insertIndex != null
+      ? contentLeft
     : placement && placement.sourceViewport === vp
       ? clamp(Math.round(placement.x), contentLeft, maxContentX)
       : contentLeft + Math.round((contentWidth - width) / 2);
@@ -133,6 +137,118 @@ function adjustForViewport(
     ? Math.max(pad, Math.round(placement.y))
     : topLevelElements.length > 0 ? bottomY + 16 : pad + 8;
   return { ...element, x, y, width };
+}
+
+function insertTopLevelElement(
+  existing: MockupElement[],
+  newElement: MockupElement,
+  insertIndex?: number,
+) {
+  if (insertIndex == null) return [...existing, newElement];
+
+  const childIds = new Set(existing.flatMap((element) => element.children ?? []));
+  const topLevelEntries = existing
+    .map((element, index) => ({ element, index }))
+    .filter(({ element }) => !childIds.has(element.id));
+  const targetIndex = topLevelEntries[insertIndex]?.index ?? existing.length;
+
+  return [
+    ...existing.slice(0, targetIndex),
+    newElement,
+    ...existing.slice(targetIndex),
+  ];
+}
+
+function reflowDesktopTopLevelElements(
+  elements: MockupElement[],
+  vp: MockupViewportKey,
+) {
+  if (vp !== "desktop") return elements;
+
+  const childIds = new Set(elements.flatMap((element) => element.children ?? []));
+  const topLevelElements = elements.filter((element) => !childIds.has(element.id));
+  const contentLeft = getViewportContentLeft(vp);
+  const contentWidth = getViewportContentWidth(vp);
+  const rowStartY = VIEWPORT_GUTTERS[vp] + 8;
+  const maxContentX = contentLeft + contentWidth;
+
+  let cursorX = contentLeft;
+  let cursorY = rowStartY;
+  let rowHeight = 0;
+
+  const layoutMap = new Map<string, Pick<MockupElement, "x" | "y">>();
+
+  topLevelElements.forEach((element) => {
+    if (FULL_BLEED_TYPES.has(element.type)) {
+      if (cursorX !== contentLeft) {
+        cursorX = contentLeft;
+        cursorY += rowHeight + FLOW_GAP;
+        rowHeight = 0;
+      }
+
+      layoutMap.set(element.id, { x: 0, y: cursorY });
+      cursorY += element.height + FLOW_GAP;
+      return;
+    }
+
+    const width = Math.min(element.width, contentWidth);
+    if (cursorX !== contentLeft && cursorX + width > maxContentX) {
+      cursorX = contentLeft;
+      cursorY += rowHeight + FLOW_GAP;
+      rowHeight = 0;
+    }
+
+    layoutMap.set(element.id, { x: cursorX, y: cursorY });
+    cursorX += width + FLOW_GAP;
+    rowHeight = Math.max(rowHeight, element.height);
+  });
+
+  return elements.map((element) => {
+    const next = layoutMap.get(element.id);
+    return next ? { ...element, ...next } : element;
+  });
+}
+
+function reflowMobileTopLevelElements(
+  elements: MockupElement[],
+  vp: MockupViewportKey,
+) {
+  if (vp !== "mobile") return elements;
+
+  const childIds = new Set(elements.flatMap((element) => element.children ?? []));
+  const topLevelElements = elements
+    .filter((element) => !childIds.has(element.id))
+    .toSorted((a, b) => (a.y - b.y) || (a.x - b.x));
+  const contentLeft = getViewportContentLeft(vp);
+  const contentWidth = getViewportContentWidth(vp);
+  let cursorY = VIEWPORT_GUTTERS[vp] + 8;
+
+  const layoutMap = new Map<string, Pick<MockupElement, "x" | "y">>();
+
+  topLevelElements.forEach((element) => {
+    const width = Math.min(element.width, contentWidth);
+    const x = FULL_BLEED_TYPES.has(element.type)
+      ? 0
+      : contentLeft + Math.round((contentWidth - width) / 2);
+
+    layoutMap.set(element.id, { x, y: cursorY });
+    cursorY += element.height + FLOW_GAP;
+  });
+
+  return elements.map((element) => {
+    const next = layoutMap.get(element.id);
+    return next ? { ...element, ...next } : element;
+  });
+}
+
+function normalizeViewportElements(
+  elements: MockupElement[],
+  vp: MockupViewportKey,
+) {
+  return reflowMobileTopLevelElements(
+    reflowDesktopTopLevelElements(elements, vp),
+    vp,
+  );
 }
 
 export function useMockup(pageId: string) {
@@ -143,20 +259,23 @@ export function useMockup(pageId: string) {
 
   const page = data?.pages.find((p) => p.id === pageId) ?? null;
 
-  const elements: MockupElement[] =
+  const elements: MockupElement[] = normalizeViewportElements(
     page?.mockupByState?.[screenState]?.[viewport]
-    ?? (screenState === "idle" ? page?.mockup?.[viewport] ?? [] : []);
+      ?? (screenState === "idle" ? page?.mockup?.[viewport] ?? [] : []),
+    viewport,
+  );
 
   const setElements = useCallback(
     (next: MockupElement[]) => {
       if (!data || !page) return;
+      const normalizedNext = normalizeViewportElements(next, viewport);
 
       if (screenState === "idle" && !page.mockupByState) {
         const mockup: MockupViewport = {
           mobile: page.mockup?.mobile ?? [],
           tablet: page.mockup?.tablet ?? [],
           desktop: page.mockup?.desktop ?? [],
-          [viewport]: next,
+          [viewport]: normalizedNext,
         };
         const pages = data.pages.map((p) =>
           p.id === pageId ? { ...p, mockup } : p,
@@ -172,7 +291,7 @@ export function useMockup(pageId: string) {
         };
         const stateViewport: MockupViewport = {
           ...(currentByState[screenState] ?? emptyViewport),
-          [viewport]: next,
+          [viewport]: normalizedNext,
         };
         const mockupByState = {
           ...currentByState,
@@ -206,7 +325,12 @@ export function useMockup(pageId: string) {
             (vpAcc, vp) => {
               const existing = stateViewport[vp] ?? [];
               const adjusted = adjustForViewport(baseElement, vp, existing, placement);
-              vpAcc[vp] = [...existing, adjusted];
+              const nextElements = insertTopLevelElement(
+                existing,
+                adjusted,
+                vp === "desktop" ? placement?.insertIndex : undefined,
+              );
+              vpAcc[vp] = normalizeViewportElements(nextElements, vp);
               return vpAcc;
             },
             { ...emptyViewport } as MockupViewport,

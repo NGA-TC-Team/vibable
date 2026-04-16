@@ -17,7 +17,24 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { PROJECT_TYPES } from "@/lib/project-types";
 import { useCreateProject } from "@/hooks/use-project.hook";
-import type { ProjectType } from "@/types/phases";
+import type { AgentSubType, ProjectType } from "@/types/phases";
+
+const AGENT_SUB_OPTIONS: {
+  value: AgentSubType;
+  label: string;
+  desc: string;
+}[] = [
+  {
+    value: "claude-subagent",
+    label: "Claude Subagent",
+    desc: ".claude/agents YAML + 프롬프트",
+  },
+  {
+    value: "openclaw",
+    label: "OpenClaw",
+    desc: "워크스페이스 마크다운 + 설정",
+  },
+];
 
 interface CreateProjectModalProps {
   workspaceId: string;
@@ -37,19 +54,27 @@ export function CreateProjectModal({
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("web");
+  const [agentSubType, setAgentSubType] = useState<AgentSubType>("claude-subagent");
   const router = useRouter();
   const createProject = useCreateProject();
 
   const handleCreate = () => {
     if (!name.trim()) return;
+    if (type === "agent" && !agentSubType) return;
 
     createProject.mutate(
-      { workspaceId, name: name.trim(), type },
+      {
+        workspaceId,
+        name: name.trim(),
+        type,
+        agentSubType: type === "agent" ? agentSubType : undefined,
+      },
       {
         onSuccess: (project) => {
           setOpen(false);
           setName("");
           setType("web");
+          setAgentSubType("claude-subagent");
           router.push(`/workspace/${project.id}`);
         },
       },
@@ -88,14 +113,14 @@ export function CreateProjectModal({
           </div>
           <div className="space-y-2">
             <Label>프로젝트 유형</Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {PROJECT_TYPES.map((pt) => (
                 <button
                   key={pt.value}
                   type="button"
                   onClick={() => setType(pt.value)}
                   className={cn(
-                    "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors",
+                    "flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors sm:p-4",
                     type === pt.value
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-muted-foreground/50",
@@ -103,13 +128,36 @@ export function CreateProjectModal({
                 >
                   {pt.icon}
                   <span className="text-sm font-medium">{pt.label}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-center text-xs text-muted-foreground">
                     {pt.desc}
                   </span>
                 </button>
               ))}
             </div>
           </div>
+          {type === "agent" && (
+            <div className="space-y-2">
+              <Label>에이전트 하위 유형</Label>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {AGENT_SUB_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAgentSubType(opt.value)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-colors",
+                      agentSubType === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50",
+                    )}
+                  >
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button

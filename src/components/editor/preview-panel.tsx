@@ -4,28 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEditorStore } from "@/services/store/editor-store";
-import { OverviewPreview } from "@/components/preview/overview-preview";
-import { UserScenarioPreview } from "@/components/preview/user-scenario-preview";
-import { RequirementsPreview } from "@/components/preview/requirements-preview";
-import { InfoArchitecturePreview } from "@/components/preview/info-architecture-preview";
-import { ScreenDesignPreview } from "@/components/preview/screen-design-preview";
-import { DataModelPreview } from "@/components/preview/data-model-preview";
-import { DesignSystemPreview } from "@/components/preview/design-system-preview";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getPhasePreviewComponent } from "@/lib/editor-phase-previews";
 
 const PrintPreview = dynamic(() => import("./print-preview").then((m) => m.PrintPreview), {
   ssr: false,
 });
-
-const previewComponents: Record<number, React.ComponentType> = {
-  0: OverviewPreview,
-  1: UserScenarioPreview,
-  2: RequirementsPreview,
-  3: InfoArchitecturePreview,
-  4: ScreenDesignPreview,
-  5: DataModelPreview,
-  6: DesignSystemPreview,
-};
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
@@ -35,8 +19,10 @@ const slideVariants = {
 
 export function PreviewPanel() {
   const currentPhase = useEditorStore((s) => s.currentPhase);
+  const projectType = useEditorStore((s) => s.projectType);
+  const agentSubType = useEditorStore((s) => s.agentSubType);
   const isPrintPreview = useEditorStore((s) => s.isPrintPreview);
-  const Preview = previewComponents[currentPhase];
+  const Preview = getPhasePreviewComponent(projectType, agentSubType, currentPhase);
 
   const [direction, setDirection] = useState(0);
   const prevPhase = useRef(currentPhase);
@@ -50,7 +36,10 @@ export function PreviewPanel() {
     return <PrintPreview />;
   }
 
-  if (currentPhase === 4 && Preview) {
+  const fullBleedPhase4 =
+    projectType !== "agent" && currentPhase === 4 && Preview;
+
+  if (fullBleedPhase4) {
     return (
       <div className="h-full w-full overflow-hidden">
         <Preview />

@@ -29,6 +29,8 @@ export function SharedClient() {
   const setPhaseData = useEditorStore((s) => s.setPhaseData);
   const setReadOnly = useEditorStore((s) => s.setReadOnly);
   const setPhase = useEditorStore((s) => s.setPhase);
+  const setProjectType = useEditorStore((s) => s.setProjectType);
+  const setAgentSubType = useEditorStore((s) => s.setAgentSubType);
   const reset = useEditorStore((s) => s.reset);
 
   useEffect(() => {
@@ -74,6 +76,9 @@ export function SharedClient() {
         workspaceId: DEFAULT_WORKSPACE_ID,
         name: `${parsed.name} (복제)`,
         type: parsed.type,
+        ...(parsed.type === "agent" && parsed.agentSubType
+          ? { agentSubType: parsed.agentSubType }
+          : {}),
       },
       {
         onSuccess: async (project) => {
@@ -90,6 +95,8 @@ export function SharedClient() {
 
   const handleReadOnly = () => {
     setPhaseData(parsed.phases);
+    setProjectType(parsed.type);
+    setAgentSubType(parsed.agentSubType ?? null);
     setReadOnly(true);
     setPhase(0);
     setViewMode("readonly");
@@ -101,6 +108,9 @@ export function SharedClient() {
       workspaceId: "",
       name: parsed.name,
       type: parsed.type,
+      ...(parsed.type === "agent" && parsed.agentSubType
+        ? { agentSubType: parsed.agentSubType }
+        : {}),
       currentPhase: 0,
       phases: parsed.phases,
       createdAt: Date.now(),
@@ -115,7 +125,12 @@ export function SharedClient() {
     );
   }
 
-  const typeLabel = { web: "웹", mobile: "모바일", cli: "CLI" }[parsed.type];
+  const typeLabel = {
+    web: "웹",
+    mobile: "모바일",
+    cli: "CLI",
+    agent: parsed.agentSubType === "openclaw" ? "OpenClaw" : "AI 에이전트",
+  }[parsed.type];
 
   return (
     <div className="flex h-screen flex-col items-center justify-center p-6">

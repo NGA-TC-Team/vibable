@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 
 interface FieldLabelProps {
   children: ReactNode;
-  tooltip: ReactNode;
+  /** 없으면 도움말 아이콘을 숨깁니다 */
+  tooltip?: ReactNode;
   icon?: LucideIcon;
   htmlFor?: string;
   className?: string;
@@ -31,7 +32,7 @@ export function FieldLabel({
   iconClassName,
 }: FieldLabelProps) {
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div className={cn("flex items-center gap-1", className)}>
       {Icon ? (
         <Icon
           className={cn(
@@ -43,22 +44,24 @@ export function FieldLabel({
       <Label htmlFor={htmlFor} className={cn("text-xs", labelClassName)}>
         {children}
       </Label>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="도움말"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <HelpCircle className="size-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs">
-            <p>{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      {tooltip != null && tooltip !== "" ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="도움말"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <HelpCircle className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p>{tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : null}
     </div>
   );
 }

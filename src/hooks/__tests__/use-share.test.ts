@@ -9,6 +9,7 @@ function makeProject(overrides?: Partial<Project>): Project {
     workspaceId: "default",
     name: "Test Project",
     type: "web",
+    currentPhase: 0,
     phases: createDefaultPhaseData() as unknown as PhaseData,
     createdAt: Date.now(),
     updatedAt: Date.now(),

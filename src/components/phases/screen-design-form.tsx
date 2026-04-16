@@ -68,6 +68,16 @@ const PROJECT_TRIGGER_OPTIONS: Record<ProjectType, { value: string; label: strin
     { value: "toggle", label: "토글" },
     { value: "shortcut", label: "단축키" },
   ],
+  agent: [
+    { value: "click", label: "클릭" },
+    { value: "doubleClick", label: "더블 클릭" },
+    { value: "hover", label: "호버" },
+    { value: "focus", label: "포커스" },
+    { value: "input", label: "입력" },
+    { value: "submit", label: "제출" },
+    { value: "scroll", label: "스크롤" },
+    { value: "shortcut", label: "단축키" },
+  ],
 };
 
 const PROJECT_ACTION_OPTIONS: Record<ProjectType, { value: string; label: string }[]> = {
@@ -103,6 +113,19 @@ const PROJECT_ACTION_OPTIONS: Record<ProjectType, { value: string; label: string
     { value: "copy", label: "복사" },
     { value: "submit", label: "제출" },
     { value: "toggle", label: "토글" },
+    { value: "other", label: "기타" },
+  ],
+  agent: [
+    { value: "navigate", label: "페이지 이동" },
+    { value: "openModal", label: "모달 열기" },
+    { value: "openDrawer", label: "드로어 열기" },
+    { value: "switchTab", label: "탭 전환" },
+    { value: "submit", label: "제출" },
+    { value: "toggle", label: "토글" },
+    { value: "refresh", label: "새로고침" },
+    { value: "openExternalLink", label: "외부 링크 열기" },
+    { value: "copy", label: "복사" },
+    { value: "download", label: "다운로드" },
     { value: "other", label: "기타" },
   ],
 };

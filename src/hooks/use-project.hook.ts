@@ -2,8 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { db, ensureDefaultWorkspace, DEFAULT_WORKSPACE_ID } from "@/lib/db";
-import { createDefaultPhaseData } from "@/lib/schemas/phase-data";
-import type { Project, ProjectType } from "@/types/phases";
+import {
+  createAgentProjectPhaseData,
+  createDefaultPhaseData,
+} from "@/lib/schemas/phase-data";
+import type { AgentSubType, Project, ProjectType } from "@/types/phases";
 
 // ─── Query Keys ───
 
@@ -50,6 +53,7 @@ interface CreateProjectInput {
   workspaceId: string;
   name: string;
   type: ProjectType;
+  agentSubType?: AgentSubType;
   initialPhases?: Project["phases"];
 }
 
@@ -58,13 +62,23 @@ export function useCreateProject() {
   return useMutation({
     mutationFn: async (input: CreateProjectInput) => {
       const now = Date.now();
+      if (input.type === "agent" && !input.agentSubType) {
+        throw new Error("agent 프로젝트에는 agentSubType이 필요합니다");
+      }
+      const phases =
+        input.initialPhases ??
+        (input.type === "agent"
+          ? createAgentProjectPhaseData(input.agentSubType!)
+          : createDefaultPhaseData());
       const project: Project = {
         id: crypto.randomUUID(),
         workspaceId: input.workspaceId,
         name: input.name,
         type: input.type,
+        agentSubType:
+          input.type === "agent" ? input.agentSubType : undefined,
         currentPhase: 0,
-        phases: input.initialPhases ?? (createDefaultPhaseData() as Project["phases"]),
+        phases: phases as Project["phases"],
         createdAt: now,
         updatedAt: now,
       };

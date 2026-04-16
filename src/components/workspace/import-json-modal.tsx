@@ -21,7 +21,7 @@ import { PROJECT_TYPES } from "@/lib/project-types";
 import { useCreateProject } from "@/hooks/use-project.hook";
 import { phaseDataSchema } from "@/lib/schemas/phase-data";
 import { SCHEMA_VERSION } from "@/lib/constants";
-import type { ProjectType, PhaseData } from "@/types/phases";
+import type { AgentSubType, PhaseData, ProjectType } from "@/types/phases";
 
 interface ImportJsonModalProps {
   workspaceId: string;
@@ -30,6 +30,7 @@ interface ImportJsonModalProps {
 interface ParsedResult {
   phases: PhaseData;
   projectType?: ProjectType;
+  agentSubType?: AgentSubType;
   schemaVersion?: number;
 }
 
@@ -57,13 +58,21 @@ function tryParseImportJson(raw: string): ParsedResult | string {
 
   const projectType = meta?.projectType as ProjectType | undefined;
   const schemaVersion = meta?.schemaVersion as number | undefined;
+  const agentSubTypeRaw = meta?.agentSubType as string | undefined;
+  const agentSubType =
+    projectType === "agent" &&
+    agentSubTypeRaw &&
+    ["claude-subagent", "openclaw"].includes(agentSubTypeRaw)
+      ? (agentSubTypeRaw as AgentSubType)
+      : undefined;
 
   return {
     phases: result.data as PhaseData,
     projectType:
-      projectType && ["web", "mobile", "cli"].includes(projectType)
+      projectType && ["web", "mobile", "cli", "agent"].includes(projectType)
         ? projectType
         : undefined,
+    ...(agentSubType ? { agentSubType } : {}),
     schemaVersion,
   };
 }
@@ -152,6 +161,9 @@ export function ImportJsonModal({ workspaceId }: ImportJsonModalProps) {
         workspaceId,
         name: name.trim(),
         type,
+        ...(type === "agent"
+          ? { agentSubType: parsedResult.agentSubType ?? "claude-subagent" }
+          : {}),
         initialPhases: parsedResult.phases,
       },
       {
