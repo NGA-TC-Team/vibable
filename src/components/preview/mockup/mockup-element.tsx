@@ -35,11 +35,38 @@ import {
   Rows3,
   Columns3,
 } from "lucide-react";
+import { LAYOUT_TYPES } from "@/lib/element-prop-schemas";
 import type { MockupElement } from "@/types/phases";
+
+type RendererContext = {
+  allElements: MockupElement[];
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
+};
+
+function renderChildren(
+  parent: MockupElement,
+  ctx: RendererContext | undefined,
+) {
+  if (!ctx || !parent.children?.length) return null;
+  const children = parent.children
+    .map((id) => ctx.allElements.find((e) => e.id === id))
+    .filter((e): e is MockupElement => e != null);
+  if (children.length === 0) return null;
+  return children.map((child) => (
+    <MockupElementView
+      key={child.id}
+      element={child}
+      allElements={ctx.allElements}
+      selected={ctx.selectedId === child.id}
+      onSelect={() => ctx.onSelect?.(child.id)}
+    />
+  ));
+}
 
 const ELEMENT_RENDERERS: Record<
   string,
-  (el: MockupElement) => React.ReactNode
+  (el: MockupElement, ctx?: RendererContext) => React.ReactNode
 > = {
   header: () => (
     <div className="flex h-full items-center gap-2 bg-muted/60 px-3">
@@ -251,42 +278,51 @@ const ELEMENT_RENDERERS: Record<
     </div>
   ),
   spacer: () => <div className="h-full w-full" />,
-  grid: (el) => (
-    <div
-      className="h-full w-full rounded border-2 border-dashed border-muted-foreground/30 p-1"
-      style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(${el.props.columns || "2"}, 1fr)`,
-        gap: `${el.props.gap || "8"}px`,
-      }}
-    >
-      {(!el.children || el.children.length === 0) && (
-        <div className="col-span-full flex items-center justify-center text-[10px] text-muted-foreground">
-          Grid ({el.props.columns || "2"}열)
-        </div>
-      )}
-    </div>
-  ),
-  hstack: (el) => (
-    <div
-      className="flex h-full w-full items-center rounded border-2 border-dashed border-muted-foreground/30 p-1"
-      style={{ gap: `${el.props.gap || "8"}px` }}
-    >
-      {(!el.children || el.children.length === 0) && (
-        <div className="flex-1 text-center text-[10px] text-muted-foreground">HStack</div>
-      )}
-    </div>
-  ),
-  vstack: (el) => (
-    <div
-      className="flex h-full w-full flex-col rounded border-2 border-dashed border-muted-foreground/30 p-1"
-      style={{ gap: `${el.props.gap || "8"}px` }}
-    >
-      {(!el.children || el.children.length === 0) && (
-        <div className="flex-1 flex items-center justify-center text-[10px] text-muted-foreground">VStack</div>
-      )}
-    </div>
-  ),
+  grid: (el, ctx) => {
+    const childContent = renderChildren(el, ctx);
+    return (
+      <div
+        className="h-full w-full rounded border-2 border-dashed border-muted-foreground/30 p-1"
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${el.props.columns || "2"}, 1fr)`,
+          gap: `${el.props.gap || "8"}px`,
+        }}
+      >
+        {childContent ?? (
+          <div className="col-span-full flex items-center justify-center text-[10px] text-muted-foreground">
+            Grid ({el.props.columns || "2"}열)
+          </div>
+        )}
+      </div>
+    );
+  },
+  hstack: (el, ctx) => {
+    const childContent = renderChildren(el, ctx);
+    return (
+      <div
+        className="flex h-full w-full items-center rounded border-2 border-dashed border-muted-foreground/30 p-1"
+        style={{ gap: `${el.props.gap || "8"}px` }}
+      >
+        {childContent ?? (
+          <div className="flex-1 text-center text-[10px] text-muted-foreground">HStack</div>
+        )}
+      </div>
+    );
+  },
+  vstack: (el, ctx) => {
+    const childContent = renderChildren(el, ctx);
+    return (
+      <div
+        className="flex h-full w-full flex-col rounded border-2 border-dashed border-muted-foreground/30 p-1"
+        style={{ gap: `${el.props.gap || "8"}px` }}
+      >
+        {childContent ?? (
+          <div className="flex-1 flex items-center justify-center text-[10px] text-muted-foreground">VStack</div>
+        )}
+      </div>
+    );
+  },
 };
 
 export const ELEMENT_ICONS: Record<string, React.ReactNode> = {
@@ -406,16 +442,31 @@ export function getDefaultSize(type: string) {
 
 interface MockupElementProps {
   element: MockupElement;
+  allElements?: MockupElement[];
   selected?: boolean;
   onSelect?: () => void;
+  selectedId?: string | null;
+  onSelectId?: (id: string) => void;
 }
 
-export function MockupElementView({ element, selected, onSelect }: MockupElementProps) {
+export function MockupElementView({
+  element,
+  allElements = [],
+  selected,
+  onSelect,
+  selectedId,
+  onSelectId,
+}: MockupElementProps) {
   const renderer = ELEMENT_RENDERERS[element.type] ?? (() => (
     <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
       {element.type}
     </div>
   ));
+
+  const ctx: RendererContext | undefined =
+    allElements.length > 0
+      ? { allElements, selectedId, onSelect: onSelectId }
+      : undefined;
 
   return (
     <div
@@ -425,11 +476,11 @@ export function MockupElementView({ element, selected, onSelect }: MockupElement
         onSelect?.();
       }}
     >
-      {renderer(element)}
+      {renderer(element, ctx)}
       {selected && (
         <div className="pointer-events-none absolute -top-5 left-0 flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-[9px] font-medium text-primary-foreground shadow-sm">
           {ELEMENT_LABELS[element.type] ?? element.type}
-          <span className="opacity-70">{element.width}×{element.height}</span>
+          <span className="opacity-70">{element.width}x{element.height}</span>
         </div>
       )}
     </div>

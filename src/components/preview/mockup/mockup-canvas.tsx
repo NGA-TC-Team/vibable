@@ -22,6 +22,7 @@ import { ScreenLinkGroup, type LinkedScreenOption } from "./screen-link-group";
 import { ViewportTabs, VIEWPORT_WIDTHS, type Viewport } from "./viewport-tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useEditorStore } from "@/services/store/editor-store";
+import { LAYOUT_TYPES } from "@/lib/element-prop-schemas";
 import type { MockupElement, MockupElementType, ProjectType, ScreenPage, ScreenState } from "@/types/phases";
 
 interface MockupCanvasProps {
@@ -33,6 +34,7 @@ interface MockupCanvasProps {
   onNavigateToPage?: (pageId: string) => void;
   onViewportChange: (v: Viewport) => void;
   onMockupChange: (elements: MockupElement[]) => void;
+  onAddElement: (element: MockupElement) => void;
 }
 
 function getPointerCoordinates(event: DragEndEvent) {
@@ -60,6 +62,11 @@ function isPointInsideRect(
   );
 }
 
+function getTopLevelElements(elements: MockupElement[]): MockupElement[] {
+  const childIds = new Set(elements.flatMap((el) => el.children ?? []));
+  return elements.filter((el) => !childIds.has(el.id));
+}
+
 export function MockupCanvas({
   page,
   projectType,
@@ -69,6 +76,7 @@ export function MockupCanvas({
   onNavigateToPage,
   onViewportChange,
   onMockupChange,
+  onAddElement,
 }: MockupCanvasProps) {
   const activeScreenState = useEditorStore((s) => s.activeScreenState);
   const setActiveScreenState = useEditorStore((s) => s.setActiveScreenState);
@@ -84,6 +92,7 @@ export function MockupCanvas({
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isOverCanvas, setIsOverCanvas] = useState(false);
+  const [overContainerId, setOverContainerId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const STATE_LABELS: Record<ScreenState, string> = {
@@ -113,18 +122,22 @@ export function MockupCanvas({
   const scale = viewport === "desktop" ? computedScale : 1;
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7617/ingest/1fd985d8-4c37-41b9-98d6-89f96a15ab8e", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "e09744" }, body: JSON.stringify({ sessionId: "e09744", runId: "initial", hypothesisId: "H1", location: "mockup-canvas.tsx:83", message: "drag start", data: { activeId: String(event.active.id), source: event.active.data.current?.source ?? null, type: event.active.data.current?.type ?? null }, timestamp: Date.now() }) }).catch(() => {});
-    // #endregion
     setActiveId(event.active.id as string);
   }, []);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7617/ingest/1fd985d8-4c37-41b9-98d6-89f96a15ab8e", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "e09744" }, body: JSON.stringify({ sessionId: "e09744", runId: "initial", hypothesisId: "H2", location: "mockup-canvas.tsx:88", message: "drag over", data: { activeId: String(event.active.id), overId: event.over?.id ? String(event.over.id) : null, activeSource: event.active.data.current?.source ?? null }, timestamp: Date.now() }) }).catch(() => {});
-    // #endregion
-    setIsOverCanvas(event.over?.id === "mockup-canvas");
-  }, []);
+    const overId = event.over?.id ? String(event.over.id) : null;
+    setIsOverCanvas(overId === "mockup-canvas");
+
+    if (overId && overId !== "mockup-canvas") {
+      const overElement = elements.find((el) => el.id === overId);
+      if (overElement && LAYOUT_TYPES.has(overElement.type)) {
+        setOverContainerId(overId);
+        return;
+      }
+    }
+    setOverContainerId(null);
+  }, [elements]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over, delta } = event;
@@ -133,45 +146,42 @@ export function MockupCanvas({
     const didDropInsideCanvas =
       over?.id === "mockup-canvas" || isOverCanvas || isPointInsideRect(pointer, canvasRect);
 
-    // #region agent log
-    fetch("http://127.0.0.1:7617/ingest/1fd985d8-4c37-41b9-98d6-89f96a15ab8e", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "e09744" }, body: JSON.stringify({ sessionId: "e09744", runId: "initial", hypothesisId: "H3", location: "mockup-canvas.tsx:95", message: "drag end", data: { activeId: String(active.id), activeSource: active.data.current?.source ?? null, activeType: active.data.current?.type ?? null, overId: over?.id ? String(over.id) : null, isOverCanvas, didDropInsideCanvas, delta: { x: delta.x, y: delta.y }, scale }, timestamp: Date.now() }) }).catch(() => {});
-    // #endregion
+    const droppedOnContainerId = overContainerId;
+
     setActiveId(null);
     setIsOverCanvas(false);
+    setOverContainerId(null);
 
     const data = active.data.current;
 
     if (data?.source === "palette") {
-      if (!didDropInsideCanvas) return;
+      if (!didDropInsideCanvas && !droppedOnContainerId) return;
 
       const type = data.type as MockupElementType;
       const size = getDefaultSize(type);
 
-      let x = 20;
-      let y = 20;
-
-      if (canvasRect && pointer) {
-        x = Math.round((pointer.clientX - canvasRect.left) / scale);
-        y = Math.round((pointer.clientY - canvasRect.top) / scale);
-      }
-
-      x = Math.max(0, Math.min(x, canvasWidth - size.width));
-      y = Math.max(0, Math.min(y, canvasHeight - size.height));
-
       const newEl: MockupElement = {
         id: crypto.randomUUID(),
         type,
-        x,
-        y,
+        x: 0,
+        y: 0,
         width: size.width,
         height: size.height,
         props: {},
       };
-      // #region agent log
-      fetch("http://127.0.0.1:7617/ingest/1fd985d8-4c37-41b9-98d6-89f96a15ab8e", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "e09744" }, body: JSON.stringify({ sessionId: "e09744", runId: "initial", hypothesisId: "H4", location: "mockup-canvas.tsx:126", message: "create palette element", data: { pageId: page.id, viewport, screenState: activeScreenState, type, x, y, nextLength: elements.length + 1 }, timestamp: Date.now() }) }).catch(() => {});
-      // #endregion
-      onMockupChange([...elements, newEl]);
-      setSelectedId(newEl.id);
+
+      if (droppedOnContainerId) {
+        const updated = elements.map((el) =>
+          el.id === droppedOnContainerId
+            ? { ...el, children: [...(el.children ?? []), newEl.id] }
+            : el,
+        );
+        onMockupChange([...updated, newEl]);
+        setSelectedId(newEl.id);
+      } else {
+        onAddElement(newEl);
+        setSelectedId(newEl.id);
+      }
       return;
     }
 
@@ -193,6 +203,7 @@ export function MockupCanvas({
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
     setIsOverCanvas(false);
+    setOverContainerId(null);
   }, []);
 
   useEffect(() => {
@@ -208,13 +219,9 @@ export function MockupCanvas({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId, elements, onMockupChange, setSelectedId]);
 
-  useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7617/ingest/1fd985d8-4c37-41b9-98d6-89f96a15ab8e", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "e09744" }, body: JSON.stringify({ sessionId: "e09744", runId: "initial", hypothesisId: "H5", location: "mockup-canvas.tsx:166", message: "canvas render snapshot", data: { pageId: page.id, viewport, screenState: activeScreenState, elementCount: elements.length, projectType }, timestamp: Date.now() }) }).catch(() => {});
-    // #endregion
-  }, [activeScreenState, elements.length, page.id, projectType, viewport]);
-
   const { setNodeRef: setDroppableRef } = useDroppable({ id: "mockup-canvas" });
+
+  const topLevelElements = useMemo(() => getTopLevelElements(elements), [elements]);
 
   const canvasContent = (
     <div
@@ -223,18 +230,26 @@ export function MockupCanvas({
         (canvasRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }}
       className={`relative bg-background transition-colors ${
-        isOverCanvas ? "ring-2 ring-primary ring-dashed" : ""
+        isOverCanvas && !overContainerId ? "ring-2 ring-primary ring-dashed" : ""
       }`}
       style={{ width: canvasWidth, height: canvasHeight }}
       onClick={() => setSelectedId(null)}
     >
-      {elements.map((el) => (
+      {topLevelElements.map((el) => (
         <DraggableElement key={el.id} element={el} isDragActive={activeId === el.id}>
-          <MockupElementView
+          <DroppableLayout
             element={el}
-            selected={el.id === selectedId}
-            onSelect={() => setSelectedId(el.id)}
-          />
+            isOverTarget={overContainerId === el.id}
+          >
+            <MockupElementView
+              element={el}
+              allElements={elements}
+              selected={el.id === selectedId}
+              selectedId={selectedId}
+              onSelect={() => setSelectedId(el.id)}
+              onSelectId={setSelectedId}
+            />
+          </DroppableLayout>
         </DraggableElement>
       ))}
     </div>
@@ -321,6 +336,37 @@ export function MockupCanvas({
         {activeId ? <GhostPreview id={activeId} elements={elements} /> : null}
       </DragOverlay>
     </DndContext>
+  );
+}
+
+function DroppableLayout({
+  element,
+  isOverTarget,
+  children,
+}: {
+  element: MockupElement;
+  isOverTarget: boolean;
+  children: React.ReactNode;
+}) {
+  const isLayout = LAYOUT_TYPES.has(element.type);
+  const { setNodeRef } = useDroppable({
+    id: element.id,
+    disabled: !isLayout,
+  });
+
+  if (!isLayout) return <>{children}</>;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`h-full w-full transition-all ${
+        isOverTarget
+          ? "ring-2 ring-blue-500 bg-blue-50/20 dark:bg-blue-950/20 rounded"
+          : ""
+      }`}
+    >
+      {children}
+    </div>
   );
 }
 

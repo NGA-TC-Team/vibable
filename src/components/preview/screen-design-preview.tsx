@@ -173,7 +173,7 @@ function ScreenWorkspace({
   outLinks: LinkedScreenOption[];
   onNavigateToPage: (pageId: string) => void;
 }) {
-  const { page, viewport, setViewport, setElements } = useMockup(pageId);
+  const { page, viewport, setViewport, setElements, addElementToAll } = useMockup(pageId);
 
   if (!page) return null;
 
@@ -188,6 +188,7 @@ function ScreenWorkspace({
         onNavigateToPage={onNavigateToPage}
         onViewportChange={setViewport}
         onMockupChange={setElements}
+        onAddElement={addElementToAll}
       />
     </div>
   );
@@ -245,6 +246,38 @@ export function ScreenDesignPreview() {
         element.id === elementId ? updater(element) : element,
       ),
     );
+  };
+
+  const reorderElements = (orderedIds: string[]) => {
+    updateActivePage((page) => {
+      const reorderViewport = (mockup?: ScreenPage["mockup"]) => {
+        if (!mockup) return mockup;
+        const sortByIds = (els: MockupElement[]) => {
+          const idxMap = new Map(orderedIds.map((id, i) => [id, i]));
+          return [...els].sort(
+            (a, b) => (idxMap.get(a.id) ?? Infinity) - (idxMap.get(b.id) ?? Infinity),
+          );
+        };
+        return {
+          mobile: sortByIds(mockup.mobile),
+          tablet: sortByIds(mockup.tablet),
+          desktop: sortByIds(mockup.desktop),
+        };
+      };
+
+      return {
+        ...page,
+        mockup: reorderViewport(page.mockup),
+        mockupByState: page.mockupByState
+          ? {
+              idle: reorderViewport(page.mockupByState.idle)!,
+              loading: reorderViewport(page.mockupByState.loading)!,
+              offline: reorderViewport(page.mockupByState.offline)!,
+              error: reorderViewport(page.mockupByState.error)!,
+            }
+          : page.mockupByState,
+      };
+    });
   };
 
   const removeElementEverywhere = (elementId: string) => {
@@ -351,7 +384,8 @@ export function ScreenDesignPreview() {
             transition={{ duration: 0.26, ease: [0.22, 0.8, 0.24, 1] }}
           >
             <div
-              className="absolute inset-0"
+              className={`absolute inset-0 ${isFlipped ? "pointer-events-none" : "pointer-events-auto z-10"}`}
+              aria-hidden={isFlipped}
               style={{ backfaceVisibility: "hidden" }}
             >
               <ScreenWorkspace
@@ -365,7 +399,8 @@ export function ScreenDesignPreview() {
             </div>
             {activePage && (
               <div
-                className="absolute inset-0"
+                className={`absolute inset-0 ${isFlipped ? "pointer-events-auto z-10" : "pointer-events-none"}`}
+                aria-hidden={!isFlipped}
                 style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
@@ -454,7 +489,11 @@ export function ScreenDesignPreview() {
                           elements={allElements}
                           selectedId={selectedId}
                           onSelect={setSelectedId}
+                          onUpdateElement={(id, patch) =>
+                            updateElementEverywhere(id, (el) => ({ ...el, ...patch }))
+                          }
                           onRemoveElement={removeElementEverywhere}
+                          onReorderElements={reorderElements}
                           getNoteMode={(element) =>
                             resolveContextNote(
                               element,

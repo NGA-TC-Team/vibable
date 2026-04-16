@@ -139,7 +139,7 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
           )}
         </SectionHeader>
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="요구사항 이름으로 검색..."
             value={funcSearch}
@@ -147,7 +147,7 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
               setFuncSearch(e.target.value);
               setFuncPage(1);
             }}
-            className="pl-8"
+            className="pl-11!"
           />
         </div>
         {paginatedFunctional.map(({ req, originalIndex }) => (
@@ -256,12 +256,12 @@ export function RequirementsForm({ disabled = false }: { disabled?: boolean }) {
           )}
         </SectionHeader>
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="비기능 요구사항 검색..."
             value={nfSearch}
             onChange={(e) => setNfSearch(e.target.value)}
-            className="pl-8"
+            className="pl-11!"
           />
         </div>
         {filteredNonFunctional.map(({ req, originalIndex }) => (
