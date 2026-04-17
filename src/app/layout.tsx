@@ -17,8 +17,10 @@ const geistMono = Geist_Mono({
 });
 
 const siteName = "Vibable";
+const siteTitleDefault =
+  "Vibable — 바이브코딩용 7단계 기획 워크플로, 기획서를 JSON·PDF로 보내는 웹 도구";
 const siteDescription =
-  "7단계 페이즈로 기획서를 체계적으로 작성하고, 완성본을 JSON 또는 PDF로 보내는 바이브코딩용 기획 도구입니다.";
+  "Vibable은 아이디어부터 요구사항·정보구조·화면 설계·데이터 모델까지 7단계 페이즈로 프로덕트 기획서를 쌓아가는 웹 도구입니다. Claude·OpenClaw용 에이전트 초안도 정리하고, 완성본은 JSON과 PDF로 보내 AI 코딩 파이프라인과 공유할 수 있습니다.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -26,7 +28,7 @@ export const metadata: Metadata = {
   ),
   applicationName: siteName,
   title: {
-    default: siteName,
+    default: siteTitleDefault,
     template: `%s · ${siteName}`,
   },
   description: siteDescription,
@@ -46,22 +48,6 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
     apple: "/vibable-logo.png",
-  },
-  openGraph: {
-    type: "website",
-    locale: "ko_KR",
-    siteName,
-    title: `${siteName} — 바이브코딩 기획서`,
-    description: siteDescription,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${siteName} — 바이브코딩 기획서`,
-    description: siteDescription,
-  },
-  robots: {
-    index: true,
-    follow: true,
   },
 };
 
