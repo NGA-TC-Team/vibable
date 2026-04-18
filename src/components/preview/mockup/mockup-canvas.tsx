@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   DndContext,
   useDraggable,
   useDroppable,
-  DragOverlay,
-  type Modifier,
   pointerWithin,
   type DragEndEvent,
   type DragStartEvent,
@@ -22,6 +21,7 @@ import { MockupElementView, getDefaultSize, GhostPreview } from "./mockup-elemen
 import { ElementPalette } from "./element-palette";
 import { ScreenLinkGroup, type LinkedScreenOption } from "./screen-link-group";
 import { ViewportTabs, VIEWPORT_WIDTHS, type Viewport } from "./viewport-tabs";
+import { ContainerWidthPicker } from "./container-width-picker";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useEditorStore } from "@/services/store/editor-store";
 import { LAYOUT_TYPES } from "@/lib/element-prop-schemas";
@@ -31,6 +31,9 @@ import {
   type MockupPlacement,
 } from "@/hooks/use-mockup.hook";
 import type { MockupElement, MockupElementType, ProjectType, ScreenPage, ScreenState } from "@/types/phases";
+
+/** 커서와 ghost 좌상단 사이 간격(px). 너무 작으면 커서가 ghost 안쪽에 파묻힌다. */
+const GHOST_CURSOR_MARGIN = 10;
 
 interface MockupCanvasProps {
   page: ScreenPage;
@@ -45,11 +48,20 @@ interface MockupCanvasProps {
   onMockupChange: (elements: MockupElement[]) => void;
   onAddElement: (element: MockupElement, placement?: MockupPlacement) => void;
   onRemoveElements?: (ids: string[]) => void;
+  /** 목업 요소를 더블클릭할 때 디테일 뷰(뒷면)의 해당 요소로 포커스를 보낸다. */
+  onRequestFocusInDetail?: (id: string) => void;
+  /** 캔버스 내부 드래그로 요소 순서를 바꿨을 때 모든 viewport/state에 동기 반영한다. */
+  onReorderElements?: (orderedIds: string[]) => void;
+  /**
+   * 외부(디테일 뷰)에서 포커스를 요청하면 캔버스가 해당 요소로 scrollIntoView.
+   * {id, serial} 쌍으로 동일 id 재요청도 강제 실행하기 위해 serial을 사용한다.
+   */
+  focusRequest?: { id: string; serial: number } | null;
 }
 
-type DragAnchor = {
-  x: number;
-  y: number;
+type PointerPosition = {
+  clientX: number;
+  clientY: number;
 };
 
 type CanvasPoint = {
@@ -69,14 +81,22 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function getPointerCoordinates(event: DragEndEvent) {
-  if (!(event.activatorEvent instanceof PointerEvent)) {
-    return null;
+  if (event.activatorEvent instanceof PointerEvent) {
+    return {
+      clientX: event.activatorEvent.clientX + event.delta.x,
+      clientY: event.activatorEvent.clientY + event.delta.y,
+    };
   }
 
-  return {
-    clientX: event.activatorEvent.clientX + event.delta.x,
-    clientY: event.activatorEvent.clientY + event.delta.y,
-  };
+  const translatedRect = event.active.rect.current.translated;
+  if (translatedRect) {
+    return {
+      clientX: translatedRect.left + translatedRect.width / 2,
+      clientY: translatedRect.top + translatedRect.height / 2,
+    };
+  }
+
+  return null;
 }
 
 function getDragOverCoordinates(event: DragOverEvent) {
@@ -122,6 +142,39 @@ function getTopLevelInsertIndex(elements: MockupElement[], x: number) {
   return nextIndex === -1 ? ordered.length : nextIndex;
 }
 
+function getTopLevelInsertIndexVertical(elements: MockupElement[], y: number) {
+  const ordered = [...elements].sort((a, b) => a.y - b.y);
+  const nextIndex = ordered.findIndex((element) => y < element.y + element.height / 2);
+  return nextIndex === -1 ? ordered.length : nextIndex;
+}
+
+/**
+ * 최상위 요소 순서를 재정렬해 orderedIds 배열을 반환한다.
+ * `insertIndex`는 요소 제거 전 기준이므로 현재 위치보다 뒤쪽이면 1 보정한다.
+ */
+function computeReorderedIds(
+  elements: MockupElement[],
+  movedId: string,
+  insertIndex: number,
+): string[] | null {
+  const childIds = new Set(elements.flatMap((el) => el.children ?? []));
+  const topLevelIds: string[] = [];
+  const restIds: string[] = [];
+  elements.forEach((el) => {
+    if (childIds.has(el.id)) restIds.push(el.id);
+    else topLevelIds.push(el.id);
+  });
+  const fromIdx = topLevelIds.indexOf(movedId);
+  if (fromIdx === -1) return null;
+  const next = [...topLevelIds];
+  next.splice(fromIdx, 1);
+  const target = insertIndex > fromIdx ? insertIndex - 1 : insertIndex;
+  const clamped = Math.max(0, Math.min(next.length, target));
+  next.splice(clamped, 0, movedId);
+  if (next.every((id, i) => id === topLevelIds[i])) return null;
+  return [...next, ...restIds];
+}
+
 function createSelectionRect(start: CanvasPoint, current: CanvasPoint): SelectionRect {
   return {
     left: Math.min(start.x, current.x),
@@ -154,6 +207,9 @@ export function MockupCanvas({
   onMockupChange,
   onAddElement,
   onRemoveElements,
+  onRequestFocusInDetail,
+  onReorderElements,
+  focusRequest,
 }: MockupCanvasProps) {
   const activeScreenState = useEditorStore((s) => s.activeScreenState);
   const setActiveScreenState = useEditorStore((s) => s.setActiveScreenState);
@@ -166,7 +222,8 @@ export function MockupCanvas({
   const topLevelElements = useMemo(() => getTopLevelElements(elements), [elements]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [dragAnchor, setDragAnchor] = useState<DragAnchor | null>(null);
+  const [activeSource, setActiveSource] = useState<"palette" | "canvas" | null>(null);
+  const [pointerPos, setPointerPos] = useState<PointerPosition | null>(null);
   const [isOverCanvas, setIsOverCanvas] = useState(false);
   const [overContainerId, setOverContainerId] = useState<string | null>(null);
   const [topLevelInsertIndex, setTopLevelInsertIndex] = useState<number | null>(null);
@@ -253,6 +310,14 @@ export function MockupCanvas({
     setSingleSelectedId(elementId);
   }, [setSingleSelectedId, toggleSelectedId]);
 
+  const handleFocusDetail = useCallback(
+    (elementId: string) => {
+      setSingleSelectedId(elementId);
+      onRequestFocusInDetail?.(elementId);
+    },
+    [onRequestFocusInDetail, setSingleSelectedId],
+  );
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     const draggedId = event.active.id as string;
@@ -262,74 +327,88 @@ export function MockupCanvas({
     }
 
     const data = event.active.data.current;
-    const draggedElement = elements.find((element) => element.id === draggedId);
-    if (data?.source === "palette") {
-      const type = data.type as MockupElementType;
-      const size = getDefaultSize(type);
+    const source: "palette" | "canvas" = data?.source === "palette" ? "palette" : "canvas";
+    setActiveSource(source);
 
-      setDragAnchor({
-        x: Math.round((size.width * scale) / 2),
-        y: Math.round((size.height * scale) / 2),
+    // 드래그 시작 좌표는 activator 이벤트에서 곧바로 얻는다 — 이후 pointermove로 갱신.
+    if (event.activatorEvent instanceof PointerEvent) {
+      setPointerPos({
+        clientX: event.activatorEvent.clientX,
+        clientY: event.activatorEvent.clientY,
       });
-      return;
     }
+  }, [selectedIds, setSingleSelectedId]);
 
-    const sourceRect = event.active.rect.current.initial;
-    const previewWidth = (draggedElement?.width ?? sourceRect?.width ?? 40) * scale;
-    const previewHeight = (draggedElement?.height ?? sourceRect?.height ?? 40) * scale;
-
-    setDragAnchor({
-      x: Math.round(previewWidth / 2),
-      y: Math.round(previewHeight / 2),
-    });
-  }, [elements, scale, selectedIds, setSingleSelectedId]);
+  // 드래그 도중 실제 커서 위치를 계속 추적 — 커스텀 ghost 오버레이를 커서에 고정시키는 데 쓴다.
+  useEffect(() => {
+    if (!activeId) return;
+    const onMove = (event: PointerEvent) => {
+      setPointerPos({ clientX: event.clientX, clientY: event.clientY });
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [activeId]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const overId = event.over?.id ? String(event.over.id) : null;
-    setIsOverCanvas(overId === "mockup-canvas");
 
+    // 레이아웃 컨테이너 위에 있으면 해당 컨테이너 drop을 우선.
     if (overId && overId !== "mockup-canvas") {
       const overElement = elements.find((el) => el.id === overId);
       if (overElement && LAYOUT_TYPES.has(overElement.type)) {
         setOverContainerId(overId);
         setTopLevelInsertIndex(null);
+        setIsOverCanvas(false);
         return;
       }
     }
     setOverContainerId(null);
-    if (
-      overId === "mockup-canvas" &&
-      isDesktopFlowViewport &&
-      event.active.data.current?.source === "palette"
-    ) {
-      const pointer = getDragOverCoordinates(event);
-      const point = pointer ? getCanvasPoint(pointer.clientX, pointer.clientY) : null;
-      setTopLevelInsertIndex(
-        point ? getTopLevelInsertIndex(topLevelElements, point.x) : topLevelElements.length,
-      );
+
+    // dnd-kit의 `over`가 기존 요소에 가려져 null이 될 수 있다. 커서 위치로 직접 판단해야
+    // 요소 위에 있을 때도 insertion indicator를 계산할 수 있다.
+    const pointer = getDragOverCoordinates(event);
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    const cursorInsideCanvas = isPointInsideRect(pointer, canvasRect);
+    setIsOverCanvas(cursorInsideCanvas);
+
+    if (!cursorInsideCanvas || !pointer) {
+      setTopLevelInsertIndex(null);
       return;
     }
 
-    setTopLevelInsertIndex(null);
+    const point = getCanvasPoint(pointer.clientX, pointer.clientY);
+    if (!point) {
+      setTopLevelInsertIndex(topLevelElements.length);
+      return;
+    }
+
+    setTopLevelInsertIndex(
+      isDesktopFlowViewport
+        ? getTopLevelInsertIndex(topLevelElements, point.x)
+        : getTopLevelInsertIndexVertical(topLevelElements, point.y),
+    );
   }, [elements, getCanvasPoint, isDesktopFlowViewport, topLevelElements]);
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over, delta } = event;
-    const pointer = getPointerCoordinates(event);
+    const { active, over } = event;
+    const pointer = pointerPos ?? getPointerCoordinates(event);
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     const didDropInsideCanvas =
       over?.id === "mockup-canvas" || isOverCanvas || isPointInsideRect(pointer, canvasRect);
 
     const droppedOnContainerId = overContainerId;
+    const capturedInsertIndex = topLevelInsertIndex;
 
     setActiveId(null);
+    setActiveSource(null);
     setIsOverCanvas(false);
     setOverContainerId(null);
     setTopLevelInsertIndex(null);
-    setDragAnchor(null);
+    setPointerPos(null);
 
     const data = active.data.current;
 
+    // 1) 팔레트 → 캔버스 드롭: 새 요소 추가.
     if (data?.source === "palette") {
       if (!didDropInsideCanvas && !droppedOnContainerId) return;
 
@@ -354,74 +433,64 @@ export function MockupCanvas({
         );
         onMockupChange([...updated, newEl]);
         setSingleSelectedId(newEl.id);
-      } else {
-        const anchorX = dragAnchor?.x ?? Math.round((size.width * scale) / 2);
-        const anchorY = dragAnchor?.y ?? Math.round((size.height * scale) / 2);
-        const logicalX = canvasRect
-          ? Math.round((pointer!.clientX - canvasRect.left - anchorX) / scale)
-          : 0;
-        const logicalY = canvasRect
-          ? Math.round((pointer!.clientY - canvasRect.top - anchorY) / scale)
-          : 0;
-        const centeredX = contentLeft + Math.round((contentWidth - size.width) / 2);
-        const boundedX = FULL_BLEED_TYPES.has(type)
-          ? 0
-          : viewport === "mobile"
-            ? centeredX
-            : clamp(logicalX, contentLeft, Math.max(contentLeft, maxContentX - size.width));
-        const placement: MockupPlacement = {
-          sourceViewport: viewport,
-          x: boundedX,
-          y: Math.max(0, logicalY),
-          width: size.width,
-          insertIndex: isDesktopFlowViewport ? topLevelInsertIndex ?? topLevelElements.length : undefined,
-        };
-
-        onAddElement(newEl, placement);
-        setSingleSelectedId(newEl.id);
+        return;
       }
+
+      // 자동 플로우: 드롭 위치의 insertion index에 맞춰 placement만 전달하고
+      // 실제 x/y는 use-mockup.hook의 reflow가 모든 viewport/state별로 정돈한다.
+      const placement: MockupPlacement = {
+        sourceViewport: viewport,
+        x: FULL_BLEED_TYPES.has(type)
+          ? 0
+          : contentLeft + Math.round((contentWidth - size.width) / 2),
+        y: 0,
+        width: size.width,
+        insertIndex: capturedInsertIndex ?? topLevelElements.length,
+      };
+      onAddElement(newEl, placement);
+      setSingleSelectedId(newEl.id);
       return;
     }
 
-    if (!over) return;
-
+    // 2) 캔버스 내 기존 요소 이동: 순서 재배치만 수행한다.
     const elId = active.id as string;
     const activeElement = elements.find((element) => element.id === elId);
     if (!activeElement) return;
 
-    const anchorX = dragAnchor?.x ?? Math.round((activeElement.width * scale) / 2);
-    const anchorY = dragAnchor?.y ?? Math.round((activeElement.height * scale) / 2);
-    const logicalX = pointer && canvasRect
-      ? Math.round((pointer.clientX - canvasRect.left - anchorX) / scale)
-      : Math.round(activeElement.x + delta.x / scale);
-    const logicalY = pointer && canvasRect
-      ? Math.round((pointer.clientY - canvasRect.top - anchorY) / scale)
-      : Math.round(activeElement.y + delta.y / scale);
+    // 레이아웃 컨테이너로 이동한 경우 해당 컨테이너의 자식으로 편입.
+    if (droppedOnContainerId && droppedOnContainerId !== elId) {
+      const updated = elements.map((el) => {
+        if (el.id === droppedOnContainerId) {
+          const existing = el.children ?? [];
+          if (existing.includes(elId)) return el;
+          return { ...el, children: [...existing, elId] };
+        }
+        if (el.children?.includes(elId)) {
+          return { ...el, children: el.children.filter((cid) => cid !== elId) };
+        }
+        return el;
+      });
+      onMockupChange(updated);
+      return;
+    }
 
-    const updated = elements.map((el) =>
-      el.id === elId
-        ? {
-            ...el,
-            x: FULL_BLEED_TYPES.has(el.type)
-              ? 0
-              : clamp(
-                  logicalX,
-                  contentLeft,
-                  Math.max(contentLeft, maxContentX - el.width),
-                ),
-            y: Math.max(0, logicalY),
-          }
-        : el,
-    );
-    onMockupChange(updated);
+    if (!didDropInsideCanvas) return;
+
+    if (capturedInsertIndex == null || !onReorderElements) return;
+
+    const orderedIds = computeReorderedIds(elements, elId, capturedInsertIndex);
+    if (orderedIds) {
+      onReorderElements(orderedIds);
+    }
   };
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
+    setActiveSource(null);
     setIsOverCanvas(false);
     setOverContainerId(null);
     setTopLevelInsertIndex(null);
-    setDragAnchor(null);
+    setPointerPos(null);
   }, []);
 
   useEffect(() => {
@@ -434,20 +503,6 @@ export function MockupCanvas({
       document.documentElement.style.cursor = previousCursor;
     };
   }, [activeId]);
-
-  const overlayModifiers = useMemo<Modifier[]>(
-    () =>
-      dragAnchor
-        ? [
-            ({ transform }) => ({
-              ...transform,
-              x: transform.x - dragAnchor.x,
-              y: transform.y - dragAnchor.y,
-            }),
-          ]
-        : [],
-    [dragAnchor],
-  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -480,6 +535,18 @@ export function MockupCanvas({
     }
   }, [elements, selectedIds, setSelectedIds]);
 
+  // 디테일뷰에서 더블클릭으로 포커스 요청이 오면 flip 애니메이션이 끝난 뒤 scrollIntoView.
+  useEffect(() => {
+    if (!focusRequest) return;
+    const timer = window.setTimeout(() => {
+      const node = canvasRef.current?.querySelector<HTMLElement>(
+        `[data-mockup-element-id="${focusRequest.id}"]`,
+      );
+      node?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [focusRequest]);
+
   const { setNodeRef: setDroppableRef } = useDroppable({ id: "mockup-canvas" });
 
   const selectedCount = selectedIds.length;
@@ -497,6 +564,20 @@ export function MockupCanvas({
 
     return clamp(orderedTopLevel[topLevelInsertIndex]!.x - 8, contentLeft, maxContentX);
   }, [contentLeft, isDesktopFlowViewport, maxContentX, topLevelElements, topLevelInsertIndex]);
+
+  const verticalInsertIndicatorY = useMemo(() => {
+    if (isDesktopFlowViewport || topLevelInsertIndex == null) return null;
+    const orderedTopLevel = [...topLevelElements].sort((a, b) => a.y - b.y);
+    if (orderedTopLevel.length === 0) return 16;
+    if (topLevelInsertIndex <= 0) {
+      return Math.max(4, orderedTopLevel[0]!.y - 6);
+    }
+    if (topLevelInsertIndex >= orderedTopLevel.length) {
+      const last = orderedTopLevel[orderedTopLevel.length - 1]!;
+      return last.y + last.height + 6;
+    }
+    return orderedTopLevel[topLevelInsertIndex]!.y - 6;
+  }, [isDesktopFlowViewport, topLevelElements, topLevelInsertIndex]);
 
   const handleCanvasPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || event.target !== event.currentTarget) return;
@@ -584,6 +665,7 @@ export function MockupCanvas({
               selectedIds={selectedIds}
               onSelect={(event) => handleElementSelect(el.id, event)}
               onSelectId={handleElementSelect}
+              onFocusDetail={handleFocusDetail}
             />
           </DroppableLayout>
         </DraggableElement>
@@ -610,6 +692,17 @@ export function MockupCanvas({
             </div>
             <div className="h-full w-0.5 rounded-full bg-blue-500/80 shadow-[0_0_14px_rgba(59,130,246,0.55)]" />
           </div>
+        </div>
+      ) : null}
+      {verticalInsertIndicatorY != null ? (
+        <div
+          className="pointer-events-none absolute inset-x-4 z-20 flex items-center gap-2"
+          style={{ top: verticalInsertIndicatorY, height: 0 }}
+        >
+          <div className="rounded-full border border-blue-400/40 bg-background/95 px-2 py-0.5 text-[10px] font-medium text-blue-600 shadow-sm dark:text-blue-300">
+            삽입
+          </div>
+          <div className="h-0.5 flex-1 rounded-full bg-blue-500/80 shadow-[0_0_14px_rgba(59,130,246,0.55)]" />
         </div>
       ) : null}
     </div>
@@ -681,6 +774,9 @@ export function MockupCanvas({
                 align="right"
               />
             </div>
+            <div className="mt-2 flex justify-center">
+              <ContainerWidthPicker />
+            </div>
           </div>
           <div
             ref={containerRef}
@@ -711,14 +807,61 @@ export function MockupCanvas({
           </div>
         </div>
       </div>
-      <DragOverlay
-        modifiers={overlayModifiers}
-        dropAnimation={{ duration: 200, easing: "ease-out" }}
-      >
-        {activeId ? <GhostPreview id={activeId} elements={elements} scale={scale} /> : null}
-      </DragOverlay>
+      <CursorGhostLayer
+        activeId={activeId}
+        activeSource={activeSource}
+        pointerPos={pointerPos}
+        elements={elements}
+        scale={scale}
+      />
     </DndContext>
   );
+}
+
+/**
+ * DragOverlay 대신 document level에 fixed 포지션으로 ghost를 고정한다.
+ * 커서 위치를 직접 추적하기 때문에 dnd-kit 내부 좌표계와 무관하게
+ * ghost 좌상단이 커서에서 `GHOST_CURSOR_MARGIN`px 안쪽에 위치한다.
+ */
+function CursorGhostLayer({
+  activeId,
+  activeSource,
+  pointerPos,
+  elements,
+  scale,
+}: {
+  activeId: string | null;
+  activeSource: "palette" | "canvas" | null;
+  pointerPos: PointerPosition | null;
+  elements: MockupElement[];
+  scale: number;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !activeId || !pointerPos) return null;
+
+  // 캔버스에서 이미 추적 중인 요소는 원본이 opacity 0.3으로 남아 이동하므로 별도 ghost 불필요.
+  // 다만 팔레트에서 드래그 중인 경우 원본 타일은 제자리에 있고 ghost만 이동해야 한다.
+  const node = (
+    <div
+      className="pointer-events-none fixed z-[9999]"
+      style={{
+        left: pointerPos.clientX - GHOST_CURSOR_MARGIN,
+        top: pointerPos.clientY - GHOST_CURSOR_MARGIN,
+      }}
+    >
+      <GhostPreview
+        id={activeId}
+        elements={elements}
+        scale={activeSource === "canvas" ? scale : 1}
+      />
+    </div>
+  );
+
+  return createPortal(node, document.body);
 }
 
 function DroppableLayout({
@@ -766,11 +909,22 @@ function DraggableElement({
     data: { source: "canvas" },
   });
 
+  // Cmd/Ctrl+클릭을 다중 선택으로 쓰려면 dnd-kit PointerSensor가
+  // activation되지 않아야 한다. modifier 키가 눌린 채 pointerdown이 오면
+  // capture 단계에서 pointer 이벤트 전파를 끊고, onClick만 남긴다.
+  const handleModifierAwareCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.metaKey || e.ctrlKey) {
+      e.stopPropagation();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
+      onPointerDownCapture={handleModifierAwareCapture}
       {...listeners}
       {...attributes}
+      data-mockup-element-id={element.id}
       className={`touch-none cursor-grab active:cursor-grabbing ${
         isDragActive ? "transition-transform duration-200" : ""
       }`}

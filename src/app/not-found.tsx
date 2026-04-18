@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-black px-6 py-16 text-center">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-white px-6 py-16 text-center">
       <div className="flex w-full max-w-lg flex-col items-center gap-8">
         <Image
           src="/not-found.png"
@@ -24,10 +24,10 @@ export default function NotFound() {
           className="h-auto w-full max-w-md select-none"
         />
         <div className="flex flex-col gap-3">
-          <h1 className="text-xl font-semibold tracking-tight text-sky-300 sm:text-2xl">
+          <h1 className="text-xl font-semibold tracking-tight text-sky-700 sm:text-2xl">
             길을 잃었나봐요
           </h1>
-          <p className="text-sm leading-relaxed text-sky-200/55 sm:text-base">
+          <p className="text-sm leading-relaxed text-sky-500/70 sm:text-base">
             요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다
           </p>
         </div>
@@ -35,7 +35,7 @@ export default function NotFound() {
           asChild
           variant="outline"
           size="lg"
-          className="rounded-full border-sky-400/40 bg-transparent text-sky-200 hover:border-sky-300/60 hover:bg-sky-400/10 hover:text-sky-100"
+          className="rounded-full border-sky-400/40 bg-transparent text-sky-700 hover:border-sky-300/60 hover:bg-sky-400/10 hover:text-sky-800"
         >
           <Link href="/">홈으로 돌아가기</Link>
         </Button>

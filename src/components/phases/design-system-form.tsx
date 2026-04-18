@@ -502,6 +502,35 @@ export function DesignSystemForm({ disabled = false }: { disabled?: boolean }) {
           }
           disabled={disabled}
         />
+        {data.layout.maxContentWidthByViewport ? (
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-xs">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="font-semibold text-foreground">
+                뷰포트별 컨테이너 폭
+              </span>
+              {data.layout.presetKey ? (
+                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
+                  {data.layout.presetKey}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <span>M {data.layout.maxContentWidthByViewport.mobile}px</span>
+              <span>T {data.layout.maxContentWidthByViewport.tablet}px</span>
+              <span>D {data.layout.maxContentWidthByViewport.desktop}px</span>
+            </div>
+            <Textarea
+              placeholder="이 레이아웃을 이렇게 잡은 이유와 기획 의도를 적어주세요."
+              value={data.layout.intent ?? ""}
+              onChange={(e) =>
+                updateNestedField("layout", { intent: e.target.value })
+              }
+              rows={3}
+              disabled={disabled}
+              className="mt-2 text-xs"
+            />
+          </div>
+        ) : null}
         <Textarea
           placeholder="여백 철학"
           value={data.layout.whitespacePhilosophy}

@@ -2,6 +2,8 @@
 
 import {
   Building2,
+  ChevronLeft,
+  ChevronRight,
   Layers3,
   Link2,
   MousePointer,
@@ -12,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { ELEMENT_LABELS } from "@/components/preview/mockup/mockup-element";
+import { resolveElementLabel } from "@/lib/mockup-element-label";
 import { AnimatedList, AnimatedListItem } from "@/components/editor/animated-list";
 import { FieldLabel } from "@/components/editor/field-label";
 import { Input } from "@/components/ui/input";
@@ -154,10 +157,13 @@ function getElementOptions(page: ScreenPage) {
   return getAllMockupElements(page).map((element) => {
     const nextCount = (typeCount.get(element.type) ?? 0) + 1;
     typeCount.set(element.type, nextCount);
+    const resolved = resolveElementLabel(element, nextCount, ELEMENT_LABELS);
 
     return {
       id: element.id,
-      label: `${ELEMENT_LABELS[element.type] ?? element.type} ${nextCount}`,
+      label: resolved.label,
+      typeLabel: resolved.typeLabel,
+      hasAlias: resolved.hasAlias,
     };
   });
 }
@@ -537,7 +543,14 @@ function ScreenPageEditor({
                   <SelectContent>
                     {elementOptions.map((option) => (
                       <SelectItem key={option.id} value={option.id}>
-                        {option.label}
+                        <span className="flex items-center gap-2">
+                          <span>{option.label}</span>
+                          {option.hasAlias ? (
+                            <span className="rounded bg-muted px-1 py-0.5 text-[9px] font-medium text-muted-foreground">
+                              {option.typeLabel}
+                            </span>
+                          ) : null}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -734,9 +747,25 @@ export function ScreenDesignForm({ disabled = false }: { disabled?: boolean }) {
     patchData({ pages });
   };
 
+  const currentPageIndex = data.pages.findIndex((p) => p.id === activeId);
+  const hasPrevPage = currentPageIndex > 0;
+  const hasNextPage = currentPageIndex >= 0 && currentPageIndex < data.pages.length - 1;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          type="button"
+          aria-label="이전 화면"
+          onClick={() => {
+            if (hasPrevPage) setActiveScreenPageId(data.pages[currentPageIndex - 1].id);
+          }}
+          disabled={!hasPrevPage}
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
         <Select value={activeId ?? undefined} onValueChange={setActiveScreenPageId}>
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="화면 선택" />
@@ -749,6 +778,18 @@ export function ScreenDesignForm({ disabled = false }: { disabled?: boolean }) {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          type="button"
+          aria-label="다음 화면"
+          onClick={() => {
+            if (hasNextPage) setActiveScreenPageId(data.pages[currentPageIndex + 1].id);
+          }}
+          disabled={!hasNextPage}
+        >
+          <ChevronRight className="size-4" />
+        </Button>
         {!disabled && (
           <Button variant="outline" size="xs" onClick={addPage}>
             <Plus className="size-3.5" />

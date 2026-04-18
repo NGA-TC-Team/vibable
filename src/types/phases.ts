@@ -109,6 +109,14 @@ export interface FunctionalRequirement {
   description: string;
   priority: "must" | "should" | "could" | "wont";
   acceptanceCriteria: string[];
+  /** "시스템은 <대상>이 <행동/상태>할 수 있어야 한다" 문장 규격 */
+  statement: string;
+  /** 왜 필요한가 (업무 목적/근거) */
+  rationale: string;
+  /** 요청자·근거 문서 등 추적성 정보 */
+  source: string;
+  /** overview.businessGoals 연결 id 배열 */
+  relatedGoalIds: string[];
 }
 
 export interface NonFunctionalRequirement {
@@ -122,17 +130,79 @@ export interface NonFunctionalRequirement {
   description: string;
 }
 
+export interface Constraint {
+  id: string;
+  category:
+    | "policy"
+    | "legal"
+    | "budget"
+    | "schedule"
+    | "legacySystem"
+    | "other";
+  description: string;
+  source: string;
+  impact: string;
+}
+
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+  kind: "role" | "state" | "entity" | "rule" | "term";
+  aliases: string[];
+}
+
+export interface Clarification {
+  id: string;
+  question: string;
+  context: string;
+  owner: string;
+  status: "open" | "answered" | "deferred";
+  answer: string;
+  blocksRequirementIds: string[];
+}
+
 export interface RequirementsPhase {
   functional: FunctionalRequirement[];
   nonFunctional: NonFunctionalRequirement[];
+  constraints: Constraint[];
+  glossary: GlossaryTerm[];
+  clarifications: Clarification[];
 }
 
 // ─── Phase 3: 정보 구조 ───
+
+export type ScreenType =
+  | "hub"
+  | "list"
+  | "detail"
+  | "create"
+  | "edit"
+  | "review"
+  | "result"
+  | "settings";
+
+export type FlowStepIntent =
+  | "view"
+  | "input"
+  | "select"
+  | "submit"
+  | "confirm"
+  | "approve"
+  | "reject"
+  | "complete";
+
+export type NavRuleSeverity = "info" | "warning" | "critical";
 
 export interface SitemapNode {
   id: string;
   label: string;
   path?: string;
+  purpose?: string;
+  screenType?: ScreenType;
+  primaryTask?: string;
+  audience?: string[];
+  primaryEntity?: string;
   children: SitemapNode[];
 }
 
@@ -140,19 +210,56 @@ export interface FlowStep {
   id: string;
   screenRef?: string;
   action: string;
+  intent?: FlowStepIntent;
+  actor?: string;
+  condition?: string;
+  outcome?: string;
   next: string[];
 }
 
 export interface UserFlow {
   id: string;
   name: string;
+  goal?: string;
+  primaryActor?: string;
+  startScreenRef?: string;
+  successEndings?: string[];
+  failureEndings?: string[];
   steps: FlowStep[];
+}
+
+export interface GlobalNavRule {
+  id: string;
+  title: string;
+  rule: string;
+  rationale?: string;
+  severity?: NavRuleSeverity;
+  appliesTo?: {
+    roles?: string[];
+    screenTypes?: ScreenType[];
+    paths?: string[];
+  };
+}
+
+export interface IaRole {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface IaEntity {
+  id: string;
+  name: string;
+  description?: string;
+  states?: string[];
 }
 
 export interface InfoArchitecturePhase {
   sitemap: SitemapNode[];
   userFlows: UserFlow[];
-  globalNavRules: string[];
+  globalNavRules: GlobalNavRule[];
+  roles?: IaRole[];
+  entities?: IaEntity[];
 }
 
 // ─── Phase 4: 화면 설계 ───
@@ -217,6 +324,8 @@ export interface MockupElement {
   height: number;
   props: Record<string, string>;
   children?: string[];
+  /** 사용자가 붙이는 별칭. 인터랙션 대상 선택 등에서 기본 라벨 대신 사용한다. */
+  alias?: string;
   designNote?: string;
   designNoteByContext?: Partial<
     Record<
@@ -354,6 +463,20 @@ export interface GlossaryEntry {
   context?: string;
 }
 
+export type LayoutPresetKey =
+  | "mobile-first"
+  | "saas"
+  | "dashboard"
+  | "marketing"
+  | "custom";
+
+/** 뷰포트 3종에 대한 최대 콘텐츠 너비(px). */
+export interface LayoutViewportWidths {
+  mobile: number;
+  tablet: number;
+  desktop: number;
+}
+
 export interface DesignSystemPhase {
   visualTheme: {
     mood: string;
@@ -369,8 +492,17 @@ export interface DesignSystemPhase {
   layout: {
     spacingScale: string[];
     gridColumns: number;
+    /** 레거시 문자열 필드 — 신규 데이터는 maxContentWidthByViewport를 쓴다. */
     maxContentWidth: string;
     whitespacePhilosophy: string;
+    /** 선택한 컨테이너 프리셋 키. */
+    presetKey?: LayoutPresetKey;
+    /** 뷰포트별 최대 콘텐츠 너비(px). */
+    maxContentWidthByViewport?: LayoutViewportWidths;
+    /** 사용자가 직접 입력한 custom 프리셋 값 — 프로젝트당 1슬롯. */
+    customWidths?: LayoutViewportWidths;
+    /** 이 레이아웃을 이렇게 잡은 기획 의도 메모. */
+    intent?: string;
   };
   elevation: {
     shadows: { level: string; value: string; usage: string }[];
@@ -400,11 +532,21 @@ export interface DesignSystemPhase {
 
 // ─── 메모 ───
 
+export interface MemoMention {
+  elementId: string;
+  /** 요소 alias 또는 Type N. 요소가 나중에 삭제돼도 표시용으로 유지. */
+  label: string;
+}
+
 export interface Memo {
   id: string;
   content: string;
   createdAt: number;
   updatedAt: number;
+  /** 답글인 경우 루트 스레드 메모의 id. 없으면 최상위 스레드(reply의 reply는 허용하지 않음). */
+  parentId?: string;
+  /** 최상위 스레드에서만 사용. 현재 화면의 UI 요소를 배지로 언급. */
+  mentions?: MemoMention[];
 }
 
 export type PhaseMemos = Record<number, Memo[]>;

@@ -209,16 +209,19 @@ function reflowDesktopTopLevelElements(
   });
 }
 
-function reflowMobileTopLevelElements(
+/**
+ * mobile/tablet 뷰포트에서 최상위 요소를 **배열 순서대로** 세로 스택한다.
+ * 이전 구현은 y 좌표로 다시 정렬해버려 사용자가 순서 재배치해도 reflow 후
+ * 원 순서로 돌아가는 문제가 있었다. 이제 배열 순서를 layout의 진실로 삼는다.
+ */
+function reflowVerticalStackTopLevelElements(
   elements: MockupElement[],
   vp: MockupViewportKey,
 ) {
-  if (vp !== "mobile") return elements;
+  if (vp === "desktop") return elements;
 
   const childIds = new Set(elements.flatMap((element) => element.children ?? []));
-  const topLevelElements = elements
-    .filter((element) => !childIds.has(element.id))
-    .toSorted((a, b) => (a.y - b.y) || (a.x - b.x));
+  const topLevelElements = elements.filter((element) => !childIds.has(element.id));
   const contentLeft = getViewportContentLeft(vp);
   const contentWidth = getViewportContentWidth(vp);
   let cursorY = VIEWPORT_GUTTERS[vp] + 8;
@@ -245,7 +248,7 @@ function normalizeViewportElements(
   elements: MockupElement[],
   vp: MockupViewportKey,
 ) {
-  return reflowMobileTopLevelElements(
+  return reflowVerticalStackTopLevelElements(
     reflowDesktopTopLevelElements(elements, vp),
     vp,
   );

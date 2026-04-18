@@ -18,7 +18,7 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-black px-6 py-16 text-center">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-white px-6 py-16 text-center">
       <div className="flex w-full max-w-lg flex-col items-center gap-8">
         <Image
           src="/error.png"
@@ -31,10 +31,10 @@ export default function ErrorPage({
         />
 
         <div className="flex flex-col gap-3">
-          <h1 className="text-xl font-semibold tracking-tight text-purple-300 sm:text-2xl">
+          <h1 className="text-xl font-semibold tracking-tight text-purple-700 sm:text-2xl">
             앗! 문제가 발생했어요
           </h1>
-          <p className="text-sm leading-relaxed text-purple-200/55 sm:text-base">
+          <p className="text-sm leading-relaxed text-purple-500/70 sm:text-base">
             일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default function ErrorPage({
           <Button
             variant="outline"
             size="lg"
-            className="rounded-full border-purple-400/40 bg-transparent text-purple-200 hover:border-purple-300/60 hover:bg-purple-400/10 hover:text-purple-100"
+            className="rounded-full border-purple-400/40 bg-transparent text-purple-700 hover:border-purple-300/60 hover:bg-purple-400/10 hover:text-purple-800"
             onClick={() => unstable_retry()}
           >
             다시 시도하기
@@ -52,7 +52,7 @@ export default function ErrorPage({
             asChild
             variant="outline"
             size="lg"
-            className="rounded-full border-purple-400/40 bg-transparent text-purple-200 hover:border-purple-300/60 hover:bg-purple-400/10 hover:text-purple-100"
+            className="rounded-full border-purple-400/40 bg-transparent text-purple-700 hover:border-purple-300/60 hover:bg-purple-400/10 hover:text-purple-800"
           >
             <Link href="/">홈으로 돌아가기</Link>
           </Button>

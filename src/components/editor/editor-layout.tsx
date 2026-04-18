@@ -1,9 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Clipboard, FileDown, FileText, Printer } from "lucide-react";
+import { ArrowLeft, Clipboard, FileDown, FileText, Printer, Stars } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +32,8 @@ import { ExportButtons } from "@/components/export/export-buttons";
 import { ShareButton } from "./share-button";
 import { useEditorStore } from "@/services/store/editor-store";
 import { useExport } from "@/hooks/use-export.hook";
+import { useMeteorEnabled } from "@/hooks/use-meteor-enabled.hook";
+import { cn } from "@/lib/utils";
 import { getPhaseExportScope } from "@/lib/export-phase-scope";
 import type { PhaseMarkdownExportKey } from "@/components/export/phase-md-generator";
 import type { Project } from "@/types/phases";
@@ -41,6 +49,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
   const setPrintPreview = useEditorStore((s) => s.setPrintPreview);
   const currentPhase = useEditorStore((s) => s.currentPhase);
   const { exportPhaseMarkdown } = useExport();
+  const { enabled: meteorEnabled, toggle: toggleMeteor } = useMeteorEnabled();
   const currentPhaseKey = getPhaseExportScope(project, currentPhase);
   const canExportMarkdown = project.type === "agent" || currentPhase !== 4;
 
@@ -84,13 +93,47 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
 
       <div className="flex flex-1 overflow-hidden">
         <aside className={isSidebarCollapsed ? "relative hidden w-14 shrink-0 overflow-hidden border-r p-3 transition-all md:block" : "relative hidden w-48 shrink-0 overflow-hidden border-r p-3 transition-all md:block"}>
-          <div className="relative z-10 h-full">
-            <PhaseNav
-              projectType={project.type}
-              onPhaseChange={onPhaseChange}
-            />
+          <div className="relative z-10 flex h-full flex-col">
+            <div className="flex-1 min-h-0">
+              <PhaseNav
+                projectType={project.type}
+                onPhaseChange={onPhaseChange}
+              />
+            </div>
+            <div
+              className={cn(
+                "flex shrink-0 pt-2",
+                isSidebarCollapsed ? "justify-center" : "justify-end",
+              )}
+            >
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={toggleMeteor}
+                      aria-pressed={meteorEnabled}
+                      aria-label={
+                        meteorEnabled ? "메테오 애니메이션 끄기" : "메테오 애니메이션 켜기"
+                      }
+                    >
+                      <Stars
+                        className={cn(
+                          "size-4 transition-colors",
+                          meteorEnabled ? "text-cyan-500" : "text-muted-foreground/50",
+                        )}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {meteorEnabled ? "메테오 끄기" : "메테오 켜기"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
-          <SidebarMeteor collapsed={isSidebarCollapsed} />
+          {meteorEnabled && <SidebarMeteor collapsed={isSidebarCollapsed} />}
         </aside>
 
         <ResizablePanelGroup orientation="horizontal" className="flex-1">

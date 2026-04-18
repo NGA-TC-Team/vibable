@@ -2,7 +2,8 @@
 
 import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type Edge, type NodeProps } from "@xyflow/react";
-import type { SitemapNode } from "@/types/phases";
+import type { SitemapNode, ScreenType } from "@/types/phases";
+import { SCREEN_TYPE_LABELS } from "@/lib/constants";
 import { FlowDiagram } from "./flow-diagram";
 
 type SitemapNodeData = {
@@ -11,6 +12,10 @@ type SitemapNodeData = {
   depth: number;
   isRoot: boolean;
   isLeaf: boolean;
+  screenType?: ScreenType;
+  purpose?: string;
+  audience?: string[];
+  primaryEntity?: string;
 };
 
 const DEPTH_TONES = [
@@ -36,6 +41,26 @@ const SitemapNodeComponent = memo(function SitemapNodeComponent({
       <div className="text-sm font-medium">{data.label}</div>
       {data.path && (
         <div className="text-xs opacity-70">{data.path}</div>
+      )}
+      {data.screenType && (
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">
+          {SCREEN_TYPE_LABELS[data.screenType]}
+        </div>
+      )}
+      {data.purpose && (
+        <div className="mt-0.5 max-w-[220px] truncate text-[10px] opacity-60">
+          {data.purpose}
+        </div>
+      )}
+      {(data.audience?.length ?? 0) > 0 && (
+        <div className="mt-0.5 text-[9px] opacity-70">
+          👤 {data.audience!.join(", ")}
+        </div>
+      )}
+      {data.primaryEntity && (
+        <div className="mt-0.5 text-[9px] opacity-70">
+          📦 {data.primaryEntity}
+        </div>
       )}
       <Handle type="source" position={Position.Bottom} className="invisible!" />
     </div>
@@ -63,6 +88,10 @@ function flatten(
         depth,
         isRoot: depth === 0,
         isLeaf,
+        screenType: node.screenType,
+        purpose: node.purpose,
+        audience: node.audience,
+        primaryEntity: node.primaryEntity,
       },
     };
     result.nodes.push(flowNode);

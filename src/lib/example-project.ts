@@ -139,6 +139,10 @@ export function getExampleProjectData(): ExampleProjectData {
               "태스크 생성 시 제목은 필수",
               "마감일이 지난 태스크는 시각적으로 구분",
             ],
+            statement: "",
+            rationale: "",
+            source: "",
+            relatedGoalIds: [],
           },
           {
             id: crypto.randomUUID(),
@@ -149,6 +153,10 @@ export function getExampleProjectData(): ExampleProjectData {
             acceptanceCriteria: [
               "마감 임박 + 높은 중요도 태스크가 최상단에 표시",
             ],
+            statement: "",
+            rationale: "",
+            source: "",
+            relatedGoalIds: [],
           },
           {
             id: crypto.randomUUID(),
@@ -160,6 +168,10 @@ export function getExampleProjectData(): ExampleProjectData {
               "반복 주기 변경 시 이후 태스크에만 적용",
               "개별 반복 건의 독립 수정 가능",
             ],
+            statement: "",
+            rationale: "",
+            source: "",
+            relatedGoalIds: [],
           },
           {
             id: crypto.randomUUID(),
@@ -171,6 +183,10 @@ export function getExampleProjectData(): ExampleProjectData {
               "할당된 팀원에게 알림 전송",
               "팀 대시보드에서 멤버별 필터 가능",
             ],
+            statement: "",
+            rationale: "",
+            source: "",
+            relatedGoalIds: [],
           },
           {
             id: crypto.randomUUID(),
@@ -182,6 +198,10 @@ export function getExampleProjectData(): ExampleProjectData {
               "알림 채널(푸시/이메일)은 사용자가 설정 가능",
               "알림 끄기 옵션 제공",
             ],
+            statement: "",
+            rationale: "",
+            source: "",
+            relatedGoalIds: [],
           },
         ],
         nonFunctional: [
@@ -198,6 +218,9 @@ export function getExampleProjectData(): ExampleProjectData {
               "오프라인 상태에서도 태스크 조회·생성이 가능하며, 온라인 복귀 시 자동 동기화된다.",
           },
         ],
+        constraints: [],
+        glossary: [],
+        clarifications: [],
       },
     },
   };

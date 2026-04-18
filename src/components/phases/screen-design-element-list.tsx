@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, GripVertical, X } from "lucide-react";
 import {
   DndContext,
@@ -53,6 +53,8 @@ interface ElementListProps {
   onRemoveElement: (id: string) => void;
   onRemoveElements?: (ids: string[]) => void;
   onReorderElements?: (orderedIds: string[]) => void;
+  /** 디테일 뷰 카드 더블클릭 시 앞면(목업 뷰)으로 전환하고 해당 요소를 포커싱한다. */
+  onRequestFocusInPreview?: (id: string) => void;
   disabled?: boolean;
   compact?: boolean;
   emptyMessage?: string;
@@ -81,6 +83,7 @@ interface CardSharedProps {
   onRemoveElement: (id: string) => void;
   onRemoveElements?: (ids: string[]) => void;
   onUpdateElement?: (id: string, patch: Partial<MockupElement>) => void;
+  onRequestFocusInPreview?: (id: string) => void;
   disabled?: boolean;
   compact: boolean;
   getNoteValue?: (element: MockupElement) => string;
@@ -97,6 +100,7 @@ export function ScreenDesignElementList({
   onRemoveElement,
   onRemoveElements,
   onReorderElements,
+  onRequestFocusInPreview,
   disabled,
   compact = false,
   emptyMessage = "미리보기에서 UI 요소를 드래그하여 추가하세요",
@@ -155,6 +159,7 @@ export function ScreenDesignElementList({
     onRemoveElement,
     onRemoveElements,
     onUpdateElement,
+    onRequestFocusInPreview,
     disabled,
     compact,
     getNoteValue,
@@ -279,6 +284,7 @@ function ElementListCard({
 }) {
   const {
     allElements, selectedIds, onSelect, onRemoveElement, onRemoveElements, onUpdateElement,
+    onRequestFocusInPreview,
     disabled, compact, getNoteValue, getNoteMode, onUpdateNote, onUpdateNoteMode,
   } = shared;
 
@@ -290,6 +296,13 @@ function ElementListCard({
   const isLayout = LAYOUT_TYPES.has(element.type);
   const children = getChildElements(element, allElements);
   const [expanded, setExpanded] = useState(true);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  // 앞면에서 더블클릭 등으로 선택된 요소는 뒷면 리스트에서 자동 스크롤해 노출한다.
+  useEffect(() => {
+    if (!isSelected || !cardRef.current) return;
+    cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [isSelected]);
 
   const handleNoteChange = (value: string) => {
     if (onUpdateNote) {
@@ -306,8 +319,9 @@ function ElementListCard({
   };
 
   return (
-    <div style={{ paddingLeft: depth * 24 }}>
+    <div>
       <div
+        ref={cardRef}
         className={`group cursor-pointer rounded-xl border bg-background/80 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
           compact ? "space-y-1.5 p-2.5" : "space-y-2 p-3"
         } ${
@@ -316,6 +330,10 @@ function ElementListCard({
             : "border-border/70 hover:-translate-y-px hover:border-muted-foreground/40 hover:shadow-sm"
         }`}
         onClick={(event) => onSelect(element.id, event.metaKey || event.ctrlKey)}
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          onRequestFocusInPreview?.(element.id);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -325,7 +343,7 @@ function ElementListCard({
         tabIndex={disabled ? -1 : 0}
       >
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
             {dragListeners && !disabled ? (
               <button
                 className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
@@ -344,11 +362,20 @@ function ElementListCard({
                   : <ChevronRight className="size-3.5" />}
               </button>
             ) : null}
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               {ELEMENT_LABELS[element.type] ?? element.type}
             </span>
+            <Input
+              value={element.alias ?? ""}
+              placeholder="별칭 (예: Ask AI 버튼)"
+              onChange={(event) => onUpdateElement?.(element.id, { alias: event.target.value })}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              disabled={disabled}
+              className="h-6 min-w-0 flex-1 border-transparent bg-transparent px-1 text-xs shadow-none focus-visible:border-border focus-visible:bg-background"
+            />
             {!isLayout ? (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="shrink-0 text-[10px] text-muted-foreground">
                 {element.width}x{element.height}
               </span>
             ) : null}
@@ -454,17 +481,46 @@ function ElementListCard({
       </div>
 
       {isLayout && expanded && children.length > 0 ? (
-        <AnimatedList className={compact ? "mt-1.5 space-y-1.5" : "mt-2 space-y-2"}>
-          {children.map((child) => (
-            <AnimatedListItem key={child.id}>
-              <ElementListCard
-                element={child}
-                shared={shared}
-                depth={depth + 1}
-              />
-            </AnimatedListItem>
-          ))}
-        </AnimatedList>
+        <div className={`pl-6 ${compact ? "mt-1.5" : "mt-2"}`}>
+          <AnimatedList className={compact ? "space-y-1.5" : "space-y-2"}>
+            {children.map((child, idx) => {
+              const isLast = idx === children.length - 1;
+              // 레딧 대댓글 스타일 tree: 왼쪽 수직 stem + ㄴ자 연결. 마지막 자식은
+              // stem이 자신의 수평선까지만 그려져 └ 모양으로 닫힌다.
+              const STEM_LEFT = -12;
+              const STEM_TOP = 20;
+              const GAP = compact ? 6 : 8;
+              return (
+                <AnimatedListItem key={child.id}>
+                  <div className="relative">
+                    <div
+                      className="pointer-events-none absolute w-px bg-border"
+                      style={{ left: STEM_LEFT, top: 0, height: STEM_TOP }}
+                      aria-hidden
+                    />
+                    {!isLast ? (
+                      <div
+                        className="pointer-events-none absolute w-px bg-border"
+                        style={{ left: STEM_LEFT, top: STEM_TOP, bottom: -GAP }}
+                        aria-hidden
+                      />
+                    ) : null}
+                    <div
+                      className="pointer-events-none absolute h-px bg-border"
+                      style={{ left: STEM_LEFT, top: STEM_TOP, width: 12 }}
+                      aria-hidden
+                    />
+                    <ElementListCard
+                      element={child}
+                      shared={shared}
+                      depth={depth + 1}
+                    />
+                  </div>
+                </AnimatedListItem>
+              );
+            })}
+          </AnimatedList>
+        </div>
       ) : null}
     </div>
   );

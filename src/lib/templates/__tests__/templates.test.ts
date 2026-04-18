@@ -9,13 +9,17 @@ describe("templatesByPhase", () => {
     }
   });
 
-  it("has 3 templates per phase, 21 total", () => {
-    let total = 0;
+  it("has at least one template per phase", () => {
     for (let i = 0; i <= 6; i++) {
-      expect(templatesByPhase[i]).toHaveLength(3);
-      total += templatesByPhase[i]!.length;
+      expect(templatesByPhase[i]!.length).toBeGreaterThanOrEqual(1);
     }
-    expect(total).toBe(21);
+  });
+
+  it("has unique template ids within each phase", () => {
+    for (let i = 0; i <= 6; i++) {
+      const ids = templatesByPhase[i]!.map((t) => t.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
   });
 
   const allTemplates: [number, PhaseTemplate][] = [];

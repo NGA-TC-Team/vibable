@@ -133,3 +133,11 @@
 [data-slot="form-panel"] textarea {
   padding: 0.625rem 0.75rem;
 }
+
+.font-sketch {
+  font-family: var(--font-sketch), "Caveat", "Kalam", "Segoe Script", cursive;
+  letter-spacing: 0.01em;
+}
+.font-sketch-hand {
+  font-family: var(--font-sketch-hand), "Kalam", "Caveat", "Segoe Script", cursive;
+}

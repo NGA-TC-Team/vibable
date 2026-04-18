@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FlipHorizontal2, Layers3, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FlipHorizontal2, Layers3, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { usePhaseData } from "@/hooks/use-phase.hook";
 import { useMockup } from "@/hooks/use-mockup.hook";
@@ -236,6 +236,9 @@ function ScreenWorkspace({
   outLinks,
   onNavigateToPage,
   onRemoveElements,
+  onRequestFocusInDetail,
+  onReorderElements,
+  focusRequest,
 }: {
   pageId: string;
   projectType: ProjectType;
@@ -243,6 +246,9 @@ function ScreenWorkspace({
   outLinks: LinkedScreenOption[];
   onNavigateToPage: (pageId: string) => void;
   onRemoveElements: (ids: string[]) => void;
+  onRequestFocusInDetail: (id: string) => void;
+  onReorderElements: (orderedIds: string[]) => void;
+  focusRequest: { id: string; serial: number } | null;
 }) {
   const { page, elements, viewport, setViewport, setElements, addElementToAll } =
     useMockup(pageId);
@@ -265,6 +271,9 @@ function ScreenWorkspace({
           onMockupChange={setElements}
           onAddElement={addElementToAll}
           onRemoveElements={onRemoveElements}
+          onRequestFocusInDetail={onRequestFocusInDetail}
+          onReorderElements={onReorderElements}
+          focusRequest={focusRequest}
         />
       </div>
     </div>
@@ -286,6 +295,8 @@ export function ScreenDesignPreview() {
   const toggleSelectedId = useEditorStore((s) => s.toggleSelectedMockupElementId);
   const setSingleSelectedId = useEditorStore((s) => s.setSingleSelectedMockupElementId);
   const [isFlipped, setIsFlipped] = useState(false);
+  // 디테일뷰 → 일반뷰 더블클릭 요청. 동일 ID 재요청도 scroll을 다시 트리거하려 serial 증가.
+  const [focusRequest, setFocusRequest] = useState<{ id: string; serial: number } | null>(null);
 
   if (!data) return null;
 
@@ -448,21 +459,71 @@ export function ScreenDesignPreview() {
 
   const selectedCount = selectedIds.length;
 
+  const handleFocusInDetail = (elementId: string) => {
+    setSingleSelectedId(elementId);
+    setIsFlipped(true);
+  };
+
+  /** 디테일 뷰 카드 더블클릭 시 앞면으로 돌아가서 해당 요소를 포커싱 + 스크롤 정렬. */
+  const handleFocusInPreview = (elementId: string) => {
+    setSingleSelectedId(elementId);
+    setIsFlipped(false);
+    setFocusRequest((prev) => ({
+      id: elementId,
+      serial: (prev?.serial ?? 0) + 1,
+    }));
+  };
+
   return (
     <div className="flex h-full flex-col gap-3 p-3">
       <div className="flex items-center justify-between gap-3">
-        <Select value={activePageId ?? undefined} onValueChange={setActiveScreenPageId}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="화면 선택" />
-          </SelectTrigger>
-          <SelectContent>
-            {data.pages.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name || "이름 없음"}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            type="button"
+            aria-label="이전 화면"
+            onClick={() => {
+              const idx = data.pages.findIndex((p) => p.id === activePageId);
+              if (idx > 0) setActiveScreenPageId(data.pages[idx - 1].id);
+            }}
+            disabled={
+              data.pages.findIndex((p) => p.id === activePageId) <= 0
+            }
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <Select value={activePageId ?? undefined} onValueChange={setActiveScreenPageId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="화면 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              {data.pages.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name || "이름 없음"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            type="button"
+            aria-label="다음 화면"
+            onClick={() => {
+              const idx = data.pages.findIndex((p) => p.id === activePageId);
+              if (idx >= 0 && idx < data.pages.length - 1) {
+                setActiveScreenPageId(data.pages[idx + 1].id);
+              }
+            }}
+            disabled={(() => {
+              const idx = data.pages.findIndex((p) => p.id === activePageId);
+              return idx < 0 || idx >= data.pages.length - 1;
+            })()}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
         <Button
           variant="outline"
           size="icon-sm"
@@ -496,6 +557,9 @@ export function ScreenDesignPreview() {
                 outLinks={linkedOutPages}
                 onNavigateToPage={setActiveScreenPageId}
                 onRemoveElements={removeElementsEverywhere}
+                onRequestFocusInDetail={handleFocusInDetail}
+                onReorderElements={reorderElements}
+                focusRequest={focusRequest}
               />
             </div>
             {activePage && (
@@ -615,6 +679,7 @@ export function ScreenDesignPreview() {
                           onRemoveElement={removeElementEverywhere}
                           onRemoveElements={removeElementsEverywhere}
                           onReorderElements={reorderElements}
+                          onRequestFocusInPreview={handleFocusInPreview}
                           getNoteMode={(element) =>
                             resolveContextNote(
                               element,

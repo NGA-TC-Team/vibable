@@ -231,17 +231,55 @@ export function generatePhaseMarkdown(
     }
     case "requirements": {
       const { requirements } = phases;
+      const constraints = requirements.constraints ?? [];
+      const glossary = requirements.glossary ?? [];
+      const clarifications = requirements.clarifications ?? [];
       pushSection(
         lines,
         "기능 요구사항",
         requirements.functional.length > 0
           ? requirements.functional.flatMap((item) => [
               `### ${item.title || "이름 없는 요구사항"}`,
+              `- ID: ${item.id}`,
               `- 우선순위: ${item.priority}`,
+              ...(item.statement?.trim() ? [`- 규격 문장: ${item.statement.trim()}`] : []),
               `- 설명: ${item.description || "없음"}`,
+              ...(item.rationale?.trim() ? [`- 근거: ${item.rationale.trim()}`] : []),
+              ...(item.source?.trim() ? [`- 출처: ${item.source.trim()}`] : []),
               `- 수용 기준: ${(item.acceptanceCriteria ?? []).join(", ") || "없음"}`,
+              ...((item.relatedGoalIds ?? []).length > 0
+                ? [`- 관련 비즈니스 목표: ${item.relatedGoalIds.join(", ")}`]
+                : []),
               "",
             ])
+          : ["- 없음"],
+      );
+      pushSection(
+        lines,
+        "용어 정의",
+        glossary.length > 0
+          ? glossary.map((item) => {
+              const aliasPart =
+                item.aliases.length > 0 ? ` _(${item.aliases.join(", ")})_` : "";
+              return `- **${item.term || "(용어 미입력)"}** (${item.kind}): ${
+                item.definition || "정의 없음"
+              }${aliasPart}`;
+            })
+          : ["- 없음"],
+      );
+      pushSection(
+        lines,
+        "제약조건",
+        constraints.length > 0
+          ? constraints.map((item) => {
+              const extras = [
+                item.source?.trim() ? `출처: ${item.source.trim()}` : null,
+                item.impact?.trim() ? `영향: ${item.impact.trim()}` : null,
+              ].filter(Boolean) as string[];
+              return `- [${item.category}] ${item.description || "설명 없음"}${
+                extras.length > 0 ? ` _(${extras.join(" · ")})_` : ""
+              }`;
+            })
           : ["- 없음"],
       );
       pushSection(
@@ -253,33 +291,170 @@ export function generatePhaseMarkdown(
             )
           : ["- 없음"],
       );
+      pushSection(
+        lines,
+        "미해결 · 확인 필요",
+        clarifications.length > 0
+          ? clarifications.map((item) => {
+              const meta = [
+                item.owner?.trim() ? `담당: ${item.owner.trim()}` : null,
+                item.context?.trim() ? `맥락: ${item.context.trim()}` : null,
+                (item.blocksRequirementIds ?? []).length > 0
+                  ? `영향: ${item.blocksRequirementIds.join(", ")}`
+                  : null,
+              ].filter(Boolean) as string[];
+              const tail = item.answer?.trim() ? ` → ${item.answer.trim()}` : "";
+              return `- [${item.status}] ${item.question || "질문 미입력"}${tail}${
+                meta.length > 0 ? ` _(${meta.join(" · ")})_` : ""
+              }`;
+            })
+          : ["- 없음"],
+      );
       break;
     }
     case "infoArchitecture": {
       const { infoArchitecture } = phases;
+      const sitemapLabelById = new Map<string, string>();
+      const collectLabels = (nodes: typeof infoArchitecture.sitemap) => {
+        nodes.forEach((n) => {
+          sitemapLabelById.set(n.id, n.label || "이름 없는 노드");
+          collectLabels(n.children);
+        });
+      };
+      collectLabels(infoArchitecture.sitemap);
+
       const flattenSitemap = (
         nodes: typeof infoArchitecture.sitemap,
         depth = 0,
       ): string[] =>
-        nodes.flatMap((node) => [
-          `${"  ".repeat(depth)}- ${node.label || "이름 없는 노드"}${node.path ? ` (${node.path})` : ""}`,
-          ...flattenSitemap(node.children, depth + 1),
-        ]);
+        nodes.flatMap((node) => {
+          const audiencePart =
+            (node.audience ?? []).length > 0
+              ? `👤${node.audience!.join("/")}`
+              : null;
+          const entityPart = node.primaryEntity
+            ? `📦${node.primaryEntity}`
+            : null;
+          const meta = [
+            node.screenType,
+            node.primaryTask?.trim() || null,
+            audiencePart,
+            entityPart,
+          ].filter(Boolean) as string[];
+          const header = `${"  ".repeat(depth)}- ${node.label || "이름 없는 노드"}${
+            node.path ? ` (${node.path})` : ""
+          }${meta.length > 0 ? ` · ${meta.join(" · ")}` : ""}`;
+          const purpose = node.purpose?.trim();
+          return [
+            header,
+            ...(purpose ? [`${"  ".repeat(depth + 1)}· ${purpose}`] : []),
+            ...flattenSitemap(node.children, depth + 1),
+          ];
+        });
       pushSection(lines, "사이트맵", flattenSitemap(infoArchitecture.sitemap));
       pushSection(
         lines,
         "유저 플로우",
         infoArchitecture.userFlows.length > 0
-          ? infoArchitecture.userFlows.flatMap((flow) => [
-              `### ${flow.name || "이름 없는 플로우"}`,
-              ...(flow.steps.length > 0
-                ? flow.steps.map((step, index) => `- ${index + 1}. ${step.action || "설명 없음"}`)
-                : ["- 스텝 없음"]),
-              "",
-            ])
+          ? infoArchitecture.userFlows.flatMap((flow) => {
+              const stepIndexById = new Map(
+                flow.steps.map((s, i) => [s.id, i + 1] as const),
+              );
+              const successSet = new Set(flow.successEndings ?? []);
+              const failureSet = new Set(flow.failureEndings ?? []);
+              const headerMeta = [
+                flow.primaryActor ? `by ${flow.primaryActor}` : null,
+                flow.goal ? `목표: ${flow.goal}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              return [
+                `### ${flow.name || "이름 없는 플로우"}${headerMeta ? ` — ${headerMeta}` : ""}`,
+                ...(flow.steps.length > 0
+                  ? flow.steps.map((step, index) => {
+                      const refLabel = step.screenRef
+                        ? sitemapLabelById.get(step.screenRef) ?? step.screenRef
+                        : null;
+                      const nextLabels = step.next
+                        .map((id) => {
+                          const idx = stepIndexById.get(id);
+                          return idx ? `${idx}` : `❓${id}`;
+                        })
+                        .join(", ");
+                      const endingBadge = successSet.has(step.id)
+                        ? "✅성공종료"
+                        : failureSet.has(step.id)
+                          ? "⛔실패종료"
+                          : null;
+                      const meta = [
+                        refLabel ? `@${refLabel}` : null,
+                        nextLabels ? `→ ${nextLabels}` : null,
+                        step.intent ? `의도:${step.intent}` : null,
+                        step.actor ? `by ${step.actor}` : null,
+                        endingBadge,
+                      ].filter(Boolean);
+                      const line = `- ${index + 1}. ${step.action || "설명 없음"}${
+                        meta.length > 0 ? `  [${meta.join(" ")}]` : ""
+                      }`;
+                      const sub: string[] = [];
+                      if (step.condition?.trim())
+                        sub.push(`  · 조건: ${step.condition.trim()}`);
+                      if (step.outcome?.trim())
+                        sub.push(`  · 결과: ${step.outcome.trim()}`);
+                      return [line, ...sub].join("\n");
+                    })
+                  : ["- 스텝 없음"]),
+                "",
+              ];
+            })
           : ["- 없음"],
       );
-      pushSection(lines, "글로벌 네비게이션 규칙", formatBullets(infoArchitecture.globalNavRules));
+      pushSection(
+        lines,
+        "글로벌 네비게이션 규칙",
+        infoArchitecture.globalNavRules.length > 0
+          ? infoArchitecture.globalNavRules
+              .filter((r) => r.rule)
+              .map((r) => {
+                const prefix = [
+                  r.severity ? `[${r.severity}]` : null,
+                  r.title || null,
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+                const body = prefix ? `${prefix} — ${r.rule}` : r.rule;
+                return `- ${body}${r.rationale ? ` _(${r.rationale})_` : ""}`;
+              })
+          : ["- 없음"],
+      );
+      const roles = infoArchitecture.roles ?? [];
+      if (roles.length > 0) {
+        pushSection(
+          lines,
+          "역할",
+          roles
+            .filter((r) => r.name)
+            .map(
+              (r) =>
+                `- **${r.name}**${r.description ? ` — ${r.description}` : ""}`,
+            ),
+        );
+      }
+      const entities = infoArchitecture.entities ?? [];
+      if (entities.length > 0) {
+        pushSection(
+          lines,
+          "엔티티",
+          entities
+            .filter((e) => e.name)
+            .map((e) => {
+              const states = (e.states ?? []).length > 0
+                ? ` · 상태: ${e.states!.join(", ")}`
+                : "";
+              return `- **${e.name}**${e.description ? ` — ${e.description}` : ""}${states}`;
+            }),
+        );
+      }
       break;
     }
     case "dataModel": {

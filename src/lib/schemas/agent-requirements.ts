@@ -1,6 +1,9 @@
 import { z } from "zod";
 import {
+  clarificationSchema,
+  constraintSchema,
   functionalRequirementSchema,
+  glossaryTermSchema,
   nonFunctionalRequirementSchema,
 } from "./requirements";
 
@@ -26,6 +29,9 @@ export const agentRequirementsOpenclawExtensionSchema = z.object({
 export const agentRequirementsSchema = z.object({
   functional: z.array(functionalRequirementSchema).default([]),
   nonFunctional: z.array(nonFunctionalRequirementSchema).default([]),
+  constraints: z.array(constraintSchema).default([]),
+  glossary: z.array(glossaryTermSchema).default([]),
+  clarifications: z.array(clarificationSchema).default([]),
   claude: agentRequirementsClaudeExtensionSchema.optional(),
   openclaw: agentRequirementsOpenclawExtensionSchema.optional(),
 });

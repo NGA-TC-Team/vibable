@@ -13,6 +13,7 @@ import { useEditorStore } from "@/services/store/editor-store";
 import { SitemapDiagram } from "./sitemap-diagram";
 import { UserFlowDiagram } from "./user-flow-diagram";
 import { SitemapTableView, UserFlowTableView } from "./info-arch-table-view";
+import { InfoArchDiagnosticsView } from "./info-arch-diagnostics-view";
 
 export function InfoArchitecturePreview() {
   const { data } = usePhaseData("infoArchitecture");
@@ -27,7 +28,7 @@ export function InfoArchitecturePreview() {
 
   const hasSitemap = data.sitemap.length > 0;
   const hasFlows = data.userFlows.length > 0;
-  const hasRules = data.globalNavRules.filter(Boolean).length > 0;
+  const hasRules = data.globalNavRules.filter((r) => r.rule).length > 0;
 
   if (!hasSitemap && !hasFlows && !hasRules) {
     return (
@@ -47,7 +48,8 @@ export function InfoArchitecturePreview() {
           type="single"
           value={infoArchView}
           onValueChange={(v) => {
-            if (v === "sitemap" || v === "userFlow") setInfoArchView(v);
+            if (v === "sitemap" || v === "userFlow" || v === "diagnostics")
+              setInfoArchView(v);
           }}
           className="self-start"
         >
@@ -57,22 +59,27 @@ export function InfoArchitecturePreview() {
           <ToggleGroupItem value="userFlow" className="text-xs">
             유저 플로우
           </ToggleGroupItem>
+          <ToggleGroupItem value="diagnostics" className="text-xs">
+            진단
+          </ToggleGroupItem>
         </ToggleGroup>
 
-        <ToggleGroup
-          type="single"
-          value={displayMode}
-          onValueChange={(v) => {
-            if (v === "diagram" || v === "table") setDisplayMode(v);
-          }}
-        >
-          <ToggleGroupItem value="diagram" className="text-xs">
-            다이어그램
-          </ToggleGroupItem>
-          <ToggleGroupItem value="table" className="text-xs">
-            표
-          </ToggleGroupItem>
-        </ToggleGroup>
+        {infoArchView !== "diagnostics" && (
+          <ToggleGroup
+            type="single"
+            value={displayMode}
+            onValueChange={(v) => {
+              if (v === "diagram" || v === "table") setDisplayMode(v);
+            }}
+          >
+            <ToggleGroupItem value="diagram" className="text-xs">
+              다이어그램
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" className="text-xs">
+              표
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </div>
 
       {infoArchView === "sitemap" && (
@@ -90,9 +97,22 @@ export function InfoArchitecturePreview() {
             <section className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground">네비게이션 규칙</h3>
               <ul className="ml-4 list-disc text-sm">
-                {data.globalNavRules.filter(Boolean).map((r, i) => (
-                  <li key={i}>{r}</li>
-                ))}
+                {data.globalNavRules
+                  .filter((r) => r.rule)
+                  .map((r) => (
+                    <li key={r.id}>
+                      {r.title && (
+                        <span className="font-medium">{r.title} — </span>
+                      )}
+                      {r.rule}
+                      {r.rationale && (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          ({r.rationale})
+                        </span>
+                      )}
+                    </li>
+                  ))}
               </ul>
             </section>
           )}
@@ -117,9 +137,9 @@ export function InfoArchitecturePreview() {
               </Select>
               {activeFlow && (
                 displayMode === "diagram" ? (
-                  <UserFlowDiagram flow={activeFlow} />
+                  <UserFlowDiagram flow={activeFlow} sitemap={data.sitemap} />
                 ) : (
-                  <UserFlowTableView flow={activeFlow} />
+                  <UserFlowTableView flow={activeFlow} sitemap={data.sitemap} />
                 )
               )}
             </>
@@ -128,6 +148,8 @@ export function InfoArchitecturePreview() {
           )}
         </div>
       )}
+
+      {infoArchView === "diagnostics" && <InfoArchDiagnosticsView ia={data} />}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import type { AgentSubType, PhaseData, ProjectType, ScreenState } from "@/types/
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type ActiveViewport = "mobile" | "tablet" | "desktop";
 
-export type InfoArchView = "sitemap" | "userFlow";
+export type InfoArchView = "sitemap" | "userFlow" | "diagnostics";
 export type InfoArchDisplayMode = "diagram" | "table";
 
 export type EditorState = {

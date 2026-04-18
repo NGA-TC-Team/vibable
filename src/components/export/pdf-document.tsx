@@ -19,6 +19,7 @@ import {
   type Persona,
   type Project,
 } from "@/types/phases";
+import { SCREEN_TYPE_LABELS } from "@/lib/constants";
 
 Font.register({
   family: "NotoSansKR",
@@ -156,6 +157,29 @@ const PRIORITY_LABELS: Record<string, string> = {
   should: "Should",
   could: "Could",
   wont: "Won't",
+};
+
+const CONSTRAINT_CATEGORY_LABELS: Record<string, string> = {
+  policy: "정책",
+  legal: "법/규제",
+  budget: "예산",
+  schedule: "일정",
+  legacySystem: "레거시",
+  other: "기타",
+};
+
+const GLOSSARY_KIND_LABELS: Record<string, string> = {
+  role: "역할",
+  state: "상태",
+  entity: "객체",
+  rule: "규칙",
+  term: "용어",
+};
+
+const CLARIFICATION_STATUS_LABELS: Record<string, string> = {
+  open: "미해결",
+  answered: "확인됨",
+  deferred: "보류",
 };
 
 function PageHeader({ projectName, phaseName }: { projectName: string; phaseName: string }) {
@@ -416,6 +440,9 @@ function UserScenarioPage({ project }: { project: Project }) {
 
 function RequirementsPage({ project }: { project: Project }) {
   const d = project.phases.requirements;
+  const constraints = d.constraints ?? [];
+  const glossary = d.glossary ?? [];
+  const clarifications = d.clarifications ?? [];
   return (
     <Page size="A4" orientation="landscape" style={s.page} wrap>
       <PageHeader projectName={project.name} phaseName={PHASE_LABELS[2]} />
@@ -426,17 +453,68 @@ function RequirementsPage({ project }: { project: Project }) {
           <Text style={s.subTitle} minPresenceAhead={40}>기능 요구사항</Text>
           <View style={s.table}>
             <View style={s.tableHeader}>
-              <Text style={[s.tableCellBold, { flex: 0.5 }]}>ID</Text>
-              <Text style={s.tableCellBold}>제목</Text>
-              <Text style={[s.tableCellBold, { flex: 2 }]}>설명</Text>
+              <Text style={[s.tableCellBold, { flex: 0.4 }]}>ID</Text>
+              <Text style={[s.tableCellBold, { flex: 0.9 }]}>제목</Text>
+              <Text style={[s.tableCellBold, { flex: 1.6 }]}>규격 문장</Text>
+              <Text style={[s.tableCellBold, { flex: 1.6 }]}>설명</Text>
               <Text style={[s.tableCellBold, { flex: 0.5 }]}>우선순위</Text>
             </View>
             {d.functional.map((r) => (
               <View key={r.id} style={s.tableRow} wrap={false}>
-                <Text style={[s.tableCell, { flex: 0.5 }]}>{r.id}</Text>
-                <Text style={s.tableCell}>{r.title}</Text>
-                <Text style={[s.tableCell, { flex: 2 }]}>{r.description}</Text>
+                <Text style={[s.tableCell, { flex: 0.4 }]}>{r.id}</Text>
+                <Text style={[s.tableCell, { flex: 0.9 }]}>{r.title}</Text>
+                <Text style={[s.tableCell, { flex: 1.6 }]}>{r.statement ?? ""}</Text>
+                <Text style={[s.tableCell, { flex: 1.6 }]}>{r.description}</Text>
                 <Text style={[s.tableCell, { flex: 0.5 }]}>{PRIORITY_LABELS[r.priority] ?? r.priority}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {glossary.length > 0 && (
+        <>
+          <Text style={s.subTitle} minPresenceAhead={40}>용어 정의</Text>
+          <View style={s.table}>
+            <View style={s.tableHeader}>
+              <Text style={[s.tableCellBold, { flex: 0.5 }]}>ID</Text>
+              <Text style={[s.tableCellBold, { flex: 0.5 }]}>유형</Text>
+              <Text style={[s.tableCellBold, { flex: 1 }]}>용어</Text>
+              <Text style={[s.tableCellBold, { flex: 2.5 }]}>정의</Text>
+            </View>
+            {glossary.map((g) => (
+              <View key={g.id} style={s.tableRow} wrap={false}>
+                <Text style={[s.tableCell, { flex: 0.5 }]}>{g.id}</Text>
+                <Text style={[s.tableCell, { flex: 0.5 }]}>{GLOSSARY_KIND_LABELS[g.kind] ?? g.kind}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{g.term}</Text>
+                <Text style={[s.tableCell, { flex: 2.5 }]}>
+                  {g.definition}
+                  {g.aliases.length > 0 ? ` (${g.aliases.join(", ")})` : ""}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {constraints.length > 0 && (
+        <>
+          <Text style={s.subTitle} minPresenceAhead={40}>제약조건</Text>
+          <View style={s.table}>
+            <View style={s.tableHeader}>
+              <Text style={[s.tableCellBold, { flex: 0.5 }]}>ID</Text>
+              <Text style={[s.tableCellBold, { flex: 0.5 }]}>분류</Text>
+              <Text style={[s.tableCellBold, { flex: 2 }]}>설명</Text>
+              <Text style={[s.tableCellBold, { flex: 1 }]}>출처</Text>
+              <Text style={[s.tableCellBold, { flex: 1 }]}>영향</Text>
+            </View>
+            {constraints.map((c) => (
+              <View key={c.id} style={s.tableRow} wrap={false}>
+                <Text style={[s.tableCell, { flex: 0.5 }]}>{c.id}</Text>
+                <Text style={[s.tableCell, { flex: 0.5 }]}>{CONSTRAINT_CATEGORY_LABELS[c.category] ?? c.category}</Text>
+                <Text style={[s.tableCell, { flex: 2 }]}>{c.description}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{c.source}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{c.impact}</Text>
               </View>
             ))}
           </View>
@@ -462,22 +540,83 @@ function RequirementsPage({ project }: { project: Project }) {
           </View>
         </>
       )}
+
+      {clarifications.length > 0 && (
+        <>
+          <Text style={s.subTitle} minPresenceAhead={40}>미해결 · 확인 필요</Text>
+          <View style={s.table}>
+            <View style={s.tableHeader}>
+              <Text style={[s.tableCellBold, { flex: 0.5 }]}>ID</Text>
+              <Text style={[s.tableCellBold, { flex: 0.5 }]}>상태</Text>
+              <Text style={[s.tableCellBold, { flex: 2 }]}>질문</Text>
+              <Text style={[s.tableCellBold, { flex: 1.5 }]}>답변</Text>
+              <Text style={[s.tableCellBold, { flex: 0.6 }]}>담당</Text>
+            </View>
+            {clarifications.map((c) => (
+              <View key={c.id} style={s.tableRow} wrap={false}>
+                <Text style={[s.tableCell, { flex: 0.5 }]}>{c.id}</Text>
+                <Text style={[s.tableCell, { flex: 0.5 }]}>{CLARIFICATION_STATUS_LABELS[c.status] ?? c.status}</Text>
+                <Text style={[s.tableCell, { flex: 2 }]}>{c.question}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{c.answer}</Text>
+                <Text style={[s.tableCell, { flex: 0.6 }]}>{c.owner}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
       <PageFooter />
     </Page>
   );
 }
 
 function renderSitemapTree(nodes: Project["phases"]["infoArchitecture"]["sitemap"], depth = 0): React.JSX.Element[] {
-  return nodes.flatMap((node) => [
-    <Text key={node.id} style={[s.listItem, { paddingLeft: 12 + depth * 16 }]}>
-      {"  ".repeat(depth)}{"├─ "}{node.label}{node.path ? ` (${node.path})` : ""}
-    </Text>,
-    ...renderSitemapTree(node.children, depth + 1),
-  ]);
+  return nodes.flatMap((node) => {
+    const audiencePart =
+      (node.audience ?? []).length > 0
+        ? `👤 ${node.audience!.join("/")}`
+        : null;
+    const entityPart = node.primaryEntity ? `📦 ${node.primaryEntity}` : null;
+    const metaParts = [
+      node.screenType ? SCREEN_TYPE_LABELS[node.screenType] : null,
+      node.primaryTask?.trim() || null,
+      audiencePart,
+      entityPart,
+    ].filter(Boolean) as string[];
+    const purpose = node.purpose?.trim();
+    return [
+      <Text key={node.id} style={[s.listItem, { paddingLeft: 12 + depth * 16 }]}>
+        {"  ".repeat(depth)}{"├─ "}{node.label}{node.path ? ` (${node.path})` : ""}
+        {metaParts.length > 0 ? ` · ${metaParts.join(" · ")}` : ""}
+      </Text>,
+      ...(purpose
+        ? [
+            <Text
+              key={`${node.id}-purpose`}
+              style={[
+                s.listItem,
+                { paddingLeft: 12 + (depth + 1) * 16, opacity: 0.7, fontSize: 9 },
+              ]}
+            >
+              · {purpose}
+            </Text>,
+          ]
+        : []),
+      ...renderSitemapTree(node.children, depth + 1),
+    ];
+  });
 }
 
 function InfoArchitecturePage({ project }: { project: Project }) {
   const d = project.phases.infoArchitecture;
+  const sitemapLabelById = new Map<string, string>();
+  const collectLabels = (nodes: typeof d.sitemap) => {
+    nodes.forEach((n) => {
+      sitemapLabelById.set(n.id, n.label || "이름 없는 노드");
+      collectLabels(n.children);
+    });
+  };
+  collectLabels(d.sitemap);
+
   return (
     <Page size="A4" orientation="landscape" style={s.page} wrap>
       <PageHeader projectName={project.name} phaseName={PHASE_LABELS[3]} />
@@ -494,25 +633,142 @@ function InfoArchitecturePage({ project }: { project: Project }) {
       {d.userFlows.length > 0 && (
         <>
           <Text style={s.subTitle}>유저 플로우</Text>
-          {d.userFlows.map((flow) => (
-            <View key={flow.id} style={s.card} wrap={false}>
-              <Text style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{flow.name}</Text>
-              {flow.steps.map((step, i) => (
-                <Text key={step.id} style={s.listItem}>
-                  {i + 1}. {step.action}{step.next.length > 0 ? ` → ${step.next.join(", ")}` : ""}
+          {d.userFlows.map((flow) => {
+            const stepIndexById = new Map(
+              flow.steps.map((st, i) => [st.id, i + 1] as const),
+            );
+            const successSet = new Set(flow.successEndings ?? []);
+            const failureSet = new Set(flow.failureEndings ?? []);
+            const flowMetaLine = [
+              flow.primaryActor ? `by ${flow.primaryActor}` : null,
+              flow.goal ? `목표: ${flow.goal}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <View key={flow.id} style={s.card} wrap={false}>
+                <Text style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
+                  {flow.name}
                 </Text>
-              ))}
-            </View>
-          ))}
+                {flowMetaLine && (
+                  <Text
+                    style={{ fontSize: 9, opacity: 0.7, marginBottom: 4 }}
+                  >
+                    {flowMetaLine}
+                  </Text>
+                )}
+                {flow.steps.map((step, i) => {
+                  const refLabel = step.screenRef
+                    ? sitemapLabelById.get(step.screenRef) ?? step.screenRef
+                    : null;
+                  const nextLabels = step.next
+                    .map((id) => stepIndexById.get(id))
+                    .filter((idx): idx is number => typeof idx === "number")
+                    .map(String)
+                    .join(", ");
+                  const endingBadge = successSet.has(step.id)
+                    ? "✅성공"
+                    : failureSet.has(step.id)
+                      ? "⛔실패"
+                      : null;
+                  const suffixParts = [
+                    refLabel ? `@${refLabel}` : null,
+                    nextLabels ? `→ ${nextLabels}` : null,
+                    step.intent ? step.intent : null,
+                    step.actor ? `by ${step.actor}` : null,
+                    endingBadge,
+                  ].filter(Boolean);
+                  return (
+                    <View key={step.id}>
+                      <Text style={s.listItem}>
+                        {i + 1}. {step.action}
+                        {suffixParts.length > 0
+                          ? `  [${suffixParts.join(" ")}]`
+                          : ""}
+                      </Text>
+                      {step.condition?.trim() && (
+                        <Text
+                          style={[
+                            s.listItem,
+                            { fontSize: 9, opacity: 0.7, paddingLeft: 20 },
+                          ]}
+                        >
+                          · 조건: {step.condition.trim()}
+                        </Text>
+                      )}
+                      {step.outcome?.trim() && (
+                        <Text
+                          style={[
+                            s.listItem,
+                            { fontSize: 9, opacity: 0.7, paddingLeft: 20 },
+                          ]}
+                        >
+                          · 결과: {step.outcome.trim()}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })}
         </>
       )}
 
-      {d.globalNavRules.filter(Boolean).length > 0 && (
+      {(d.roles ?? []).filter((r) => r.name).length > 0 && (
+        <>
+          <Text style={s.subTitle}>역할</Text>
+          {(d.roles ?? [])
+            .filter((r) => r.name)
+            .map((r) => (
+              <Text key={r.id} style={s.listItem}>
+                • {r.name}
+                {r.description ? ` — ${r.description}` : ""}
+              </Text>
+            ))}
+          <View style={s.divider} />
+        </>
+      )}
+
+      {(d.entities ?? []).filter((e) => e.name).length > 0 && (
+        <>
+          <Text style={s.subTitle}>엔티티</Text>
+          {(d.entities ?? [])
+            .filter((e) => e.name)
+            .map((e) => {
+              const states = (e.states ?? []).length > 0
+                ? ` · 상태: ${e.states!.join(", ")}`
+                : "";
+              return (
+                <Text key={e.id} style={s.listItem}>
+                  • {e.name}
+                  {e.description ? ` — ${e.description}` : ""}
+                  {states}
+                </Text>
+              );
+            })}
+          <View style={s.divider} />
+        </>
+      )}
+
+      {d.globalNavRules.filter((r) => r.rule).length > 0 && (
         <>
           <Text style={s.subTitle}>글로벌 네비게이션 규칙</Text>
-          {d.globalNavRules.filter(Boolean).map((rule, i) => (
-            <Text key={i} style={s.listItem}>• {rule}</Text>
-          ))}
+          {d.globalNavRules
+            .filter((r) => r.rule)
+            .map((rule) => {
+              const parts = [
+                rule.severity ? `[${rule.severity}]` : null,
+                rule.title ? `${rule.title}:` : null,
+                rule.rule,
+              ].filter(Boolean);
+              return (
+                <Text key={rule.id} style={s.listItem}>
+                  • {parts.join(" ")}
+                  {rule.rationale ? ` — ${rule.rationale}` : ""}
+                </Text>
+              );
+            })}
         </>
       )}
       <PageFooter />
