@@ -58,9 +58,9 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
       <header className="flex shrink-0 items-center gap-2 border-b px-6 py-3.5 sm:px-8 sm:py-4">
         <Link
           href="/workspace"
-          className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
+          className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5"
         >
-          <VibableLogo width={24} height={24} />
+          <VibableLogo width={30} height={30} />
           <span className="hidden text-sm font-semibold sm:inline">Vibable</span>
           <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
             Powered By NGA

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { FileUp, Upload, AlertTriangle } from "lucide-react";
 import {
@@ -25,6 +25,9 @@ import type { AgentSubType, PhaseData, ProjectType } from "@/types/phases";
 
 interface ImportJsonModalProps {
   workspaceId: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: ReactNode;
 }
 
 interface ParsedResult {
@@ -77,8 +80,10 @@ function tryParseImportJson(raw: string): ParsedResult | string {
   };
 }
 
-export function ImportJsonModal({ workspaceId }: ImportJsonModalProps) {
-  const [open, setOpen] = useState(false);
+export function ImportJsonModal({ workspaceId, open: controlledOpen, onOpenChange: controlledOnOpenChange, trigger }: ImportJsonModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("web");
   const [jsonText, setJsonText] = useState("");
@@ -184,14 +189,18 @@ export function ImportJsonModal({ workspaceId }: ImportJsonModalProps) {
         if (!v) resetState();
       }}
     >
-      <DialogTrigger asChild>
-        <button className="flex h-full min-h-[180px] cursor-pointer items-center justify-center rounded-4xl border-2 border-dashed border-muted-foreground/25 bg-background transition-colors hover:border-muted-foreground/50 hover:bg-muted/50">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <FileUp className="size-8" />
-            <span className="text-sm font-medium">JSON 가져오기</span>
-          </div>
-        </button>
-      </DialogTrigger>
+      {trigger !== undefined ? (
+        trigger
+      ) : (
+        <DialogTrigger asChild>
+          <button className="flex h-full min-h-[180px] cursor-pointer items-center justify-center rounded-4xl border-2 border-dashed border-muted-foreground/25 bg-background transition-colors hover:border-muted-foreground/50 hover:bg-muted/50">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <FileUp className="size-8" />
+              <span className="text-sm font-medium">JSON 가져오기</span>
+            </div>
+          </button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>JSON 가져오기</DialogTitle>

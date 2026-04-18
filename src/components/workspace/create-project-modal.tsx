@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,84 @@ import { cn } from "@/lib/utils";
 import { PROJECT_TYPES } from "@/lib/project-types";
 import { useCreateProject } from "@/hooks/use-project.hook";
 import type { AgentSubType, ProjectType } from "@/types/phases";
+
+function sinePath(yCenter: number, amplitude: number, periods: number): string {
+  const totalWidth = 1200;
+  const steps = 400;
+  const pts: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = (i / steps) * totalWidth;
+    const y = yCenter + amplitude * Math.sin((i / steps) * Math.PI * 2 * periods);
+    pts.push(`${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`);
+  }
+  return pts.join(" ");
+}
+
+const COLOR_CYCLE = [
+  "#38bdf8", // sky-400
+  "#a78bfa", // violet-400
+  "#34d399", // emerald-400
+  "#f472b6", // pink-400
+  "#60a5fa", // blue-400
+  "#fb923c", // orange-400
+  "#2dd4bf", // teal-400
+  "#818cf8", // indigo-400
+  "#38bdf8", // sky-400 (loop back)
+];
+
+const WATER_WAVES = [
+  // 원경 (far) — 희미하고 얇게
+  { yCenter: 28,  amp: 3, duration: 7.3, opacity: 0.10, sw: 0.7, delay: 0.0, colorDuration: 14, colorDelay: 0.0 },
+  { yCenter: 46,  amp: 4, duration: 5.7, opacity: 0.13, sw: 0.9, delay: 1.1, colorDuration: 17, colorDelay: 1.8 },
+  // 중경 (mid) — 중간 선명도
+  { yCenter: 72,  amp: 6, duration: 3.8, opacity: 0.22, sw: 1.2, delay: 0.4, colorDuration: 11, colorDelay: 3.5 },
+  { yCenter: 90,  amp: 7, duration: 6.1, opacity: 0.25, sw: 1.3, delay: 1.8, colorDuration: 15, colorDelay: 0.9 },
+  { yCenter: 108, amp: 7, duration: 4.6, opacity: 0.25, sw: 1.3, delay: 0.9, colorDuration: 12, colorDelay: 2.6 },
+  // 전경 (near) — 선명하고 굵게
+  { yCenter: 128, amp: 8, duration: 2.9, opacity: 0.32, sw: 1.7, delay: 0.3, colorDuration: 10, colorDelay: 4.2 },
+  { yCenter: 144, amp: 9, duration: 8.5, opacity: 0.35, sw: 1.9, delay: 1.5, colorDuration: 13, colorDelay: 1.4 },
+  { yCenter: 160, amp: 8, duration: 3.3, opacity: 0.38, sw: 2.1, delay: 2.2, colorDuration: 16, colorDelay: 5.1 },
+];
+
+const WAVE_PATHS = WATER_WAVES.map((w) => sinePath(w.yCenter, w.amp, 3));
+
+function WaterSurface() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+      {WATER_WAVES.map((wave, i) => (
+        <motion.div
+          key={i}
+          className="absolute left-0 top-0 h-full"
+          style={{ width: "300%" }}
+          initial={{ x: "0%" }}
+          animate={{ x: "-33.33%" }}
+          transition={{
+            duration: wave.duration,
+            ease: "linear",
+            repeat: Infinity,
+            delay: wave.delay,
+          }}
+        >
+          <svg viewBox="0 0 1200 180" width="100%" height="100%" preserveAspectRatio="none">
+            <motion.path
+              d={WAVE_PATHS[i]}
+              fill="none"
+              strokeWidth={wave.sw}
+              opacity={wave.opacity}
+              animate={{ stroke: COLOR_CYCLE }}
+              transition={{
+                duration: wave.colorDuration,
+                ease: "linear",
+                repeat: Infinity,
+                delay: wave.colorDelay,
+              }}
+            />
+          </svg>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 const AGENT_SUB_OPTIONS: {
   value: AgentSubType;
@@ -87,8 +166,9 @@ export function CreateProjectModal({
         trigger
       ) : (
         <DialogTrigger asChild>
-          <button className="flex h-full min-h-[180px] cursor-pointer items-center justify-center rounded-4xl border-2 border-dashed border-muted-foreground/25 bg-background transition-colors hover:border-muted-foreground/50 hover:bg-muted/50">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <button className="relative flex h-full min-h-[180px] cursor-pointer items-center justify-center overflow-hidden rounded-4xl border-2 border-dashed border-muted-foreground/25 bg-background transition-colors hover:border-muted-foreground/50 hover:bg-muted/30">
+            <WaterSurface />
+            <div className="relative z-10 flex flex-col items-center gap-2 text-foreground">
               <Plus className="size-8" />
               <span className="text-sm font-medium">새 프로젝트</span>
             </div>
