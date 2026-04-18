@@ -141,3 +141,18 @@
 .font-sketch-hand {
   font-family: var(--font-sketch-hand), "Kalam", "Caveat", "Segoe Script", cursive;
 }
+
+/* View Transition — 라이트/다크 모드 원형 리빌 */
+@media not (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+  ::view-transition-new(root) {
+    z-index: 2;
+  }
+}
