@@ -14,7 +14,10 @@ import { useEditorStore } from "@/services/store/editor-store";
 import { EditorLayout } from "@/components/editor/editor-layout";
 import { toast } from "sonner";
 import type { PhaseData, Project } from "@/types/phases";
-import { phaseDataSchema } from "@/lib/schemas/phase-data";
+import {
+  createCliProjectPhaseData,
+  phaseDataSchema,
+} from "@/lib/schemas/phase-data";
 
 type ViewMode = "choose" | "readonly";
 
@@ -32,6 +35,7 @@ export function SharedClient() {
   const setPhase = useEditorStore((s) => s.setPhase);
   const setProjectType = useEditorStore((s) => s.setProjectType);
   const setAgentSubType = useEditorStore((s) => s.setAgentSubType);
+  const setCliSubType = useEditorStore((s) => s.setCliSubType);
   const reset = useEditorStore((s) => s.reset);
 
   useEffect(() => {
@@ -80,6 +84,9 @@ export function SharedClient() {
         ...(parsed.type === "agent" && parsed.agentSubType
           ? { agentSubType: parsed.agentSubType }
           : {}),
+        ...(parsed.type === "cli"
+          ? { cliSubType: parsed.cliSubType ?? "hybrid" }
+          : {}),
       },
       {
         onSuccess: async (project) => {
@@ -95,9 +102,25 @@ export function SharedClient() {
   };
 
   const handleReadOnly = () => {
-    setPhaseData(phaseDataSchema.parse(parsed.phases) as PhaseData);
+    const basePhases = phaseDataSchema.parse(parsed.phases) as PhaseData;
+    const cliSub =
+      parsed.type === "cli" ? parsed.cliSubType ?? "hybrid" : null;
+    let phases = basePhases;
+    if (parsed.type === "cli") {
+      const defaults = createCliProjectPhaseData(cliSub ?? "hybrid") as PhaseData;
+      phases = {
+        ...basePhases,
+        cliRequirements: basePhases.cliRequirements ?? defaults.cliRequirements,
+        commandTree: basePhases.commandTree ?? defaults.commandTree,
+        cliContract: basePhases.cliContract ?? defaults.cliContract,
+        cliConfig: basePhases.cliConfig ?? defaults.cliConfig,
+        cliTerminalUx: basePhases.cliTerminalUx ?? defaults.cliTerminalUx,
+      };
+    }
+    setPhaseData(phases);
     setProjectType(parsed.type);
     setAgentSubType(parsed.agentSubType ?? null);
+    setCliSubType(cliSub);
     setReadOnly(true);
     setPhase(0);
     setViewMode("readonly");
@@ -111,6 +134,9 @@ export function SharedClient() {
       type: parsed.type,
       ...(parsed.type === "agent" && parsed.agentSubType
         ? { agentSubType: parsed.agentSubType }
+        : {}),
+      ...(parsed.type === "cli"
+        ? { cliSubType: parsed.cliSubType ?? "hybrid" }
         : {}),
       currentPhase: 0,
       phases: parsed.phases,

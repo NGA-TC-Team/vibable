@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TemplatePromptModal } from "./template-prompt-modal";
 import { SectionHeader } from "./section-header";
 import { useJsonPaste } from "@/hooks/use-json-paste.hook";
-import { AGENT_PHASE_LABELS, PHASE_LABELS } from "@/types/phases";
+import { AGENT_PHASE_LABELS, CLI_PHASE_LABELS, PHASE_LABELS } from "@/types/phases";
 import { SECTION_TOOLTIPS } from "@/lib/constants";
 import { getPhaseFormComponent, getPhaseTooltipKey } from "@/lib/editor-phase-forms";
 
@@ -21,7 +21,11 @@ export function FormPanel() {
 
   const Form = getPhaseFormComponent(projectType, agentSubType, currentPhase);
   const phaseTitle =
-    projectType === "agent" ? AGENT_PHASE_LABELS[currentPhase] : PHASE_LABELS[currentPhase];
+    projectType === "agent"
+      ? AGENT_PHASE_LABELS[currentPhase]
+      : projectType === "cli"
+        ? CLI_PHASE_LABELS[currentPhase]
+        : PHASE_LABELS[currentPhase];
   const tooltipKey = getPhaseTooltipKey(projectType, currentPhase);
 
   return (

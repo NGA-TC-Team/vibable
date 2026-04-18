@@ -24,7 +24,7 @@ export const PROJECT_TYPES: ProjectTypeOption[] = [
   {
     value: "cli",
     label: "CLI",
-    desc: "커맨드라인 도구",
+    desc: "인간·AI 에이전트 겸용",
     icon: <Terminal className="size-5" />,
   },
   {

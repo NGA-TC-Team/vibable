@@ -74,7 +74,7 @@ const clarificationStatuses = {
 
 const PAGE_SIZE = 3;
 
-type RequirementsSliceKey = "requirements" | "agentRequirements";
+type RequirementsSliceKey = "requirements" | "agentRequirements" | "cliRequirements";
 
 function padId(prefix: string, n: number) {
   return `${prefix}-${String(n).padStart(3, "0")}`;

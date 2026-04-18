@@ -15,6 +15,7 @@ import {
 } from "@/lib/overview-groups";
 import {
   AGENT_PHASE_LABELS,
+  CLI_PHASE_LABELS,
   PHASE_LABELS,
   type Persona,
   type Project,
@@ -1143,6 +1144,45 @@ function AgentJsonPdfPage({
 }
 
 function PdfDocument({ project }: { project: Project }) {
+  if (project.type === "cli") {
+    const p = project.phases;
+    return (
+      <Document
+        title={`${project.name} 기획서`}
+        author="vibable"
+        subject={`${project.name} — ${exportTypeLabel(project)} 기획서`}
+      >
+        <CoverPage project={project} />
+        <OverviewPage project={project} />
+        <UserScenarioPage project={project} />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={CLI_PHASE_LABELS[2]}
+          slice={p.cliRequirements}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={CLI_PHASE_LABELS[3]}
+          slice={p.commandTree}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={CLI_PHASE_LABELS[4]}
+          slice={p.cliContract}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={CLI_PHASE_LABELS[5]}
+          slice={p.cliConfig}
+        />
+        <AgentJsonPdfPage
+          project={project}
+          phaseTitle={CLI_PHASE_LABELS[6]}
+          slice={p.cliTerminalUx}
+        />
+      </Document>
+    );
+  }
   if (project.type === "agent") {
     const p = project.phases;
     return (
@@ -1196,7 +1236,8 @@ function PdfDocument({ project }: { project: Project }) {
       <InfoArchitecturePage project={project} />
       <ScreenDesignPage project={project} />
       <DataModelPage project={project} />
-      {project.type !== "cli" && <DesignSystemPage project={project} />}
+      <DesignSystemPage project={project} />
+      {/* CLI/agent 분기는 상단에서 early-return */}
     </Document>
   );
 }

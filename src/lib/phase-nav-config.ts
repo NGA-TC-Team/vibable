@@ -20,8 +20,19 @@ export const AGENT_PHASE_DATA_KEYS = [
   "agentSafety",
 ] as const;
 
+export const CLI_PHASE_DATA_KEYS = [
+  "overview",
+  "userScenario",
+  "cliRequirements",
+  "commandTree",
+  "cliContract",
+  "cliConfig",
+  "cliTerminalUx",
+] as const;
+
 export type LegacyPhaseDataKey = (typeof LEGACY_PHASE_DATA_KEYS)[number];
 export type AgentPhaseDataKey = (typeof AGENT_PHASE_DATA_KEYS)[number];
+export type CliPhaseDataKey = (typeof CLI_PHASE_DATA_KEYS)[number];
 
 export function isLegacyPhaseComplete(
   phaseIndex: number,
@@ -94,6 +105,33 @@ export function isAgentPhaseComplete(phaseIndex: number, phaseData: PhaseData): 
         (s.testCases?.length ?? 0) > 0
       );
     }
+    default:
+      return false;
+  }
+}
+
+export function isCliPhaseComplete(phaseIndex: number, phaseData: PhaseData): boolean {
+  switch (phaseIndex) {
+    case 0:
+      return !!phaseData.overview?.projectName?.trim();
+    case 1:
+      return (phaseData.userScenario?.personas?.length ?? 0) > 0;
+    case 2:
+      return (phaseData.cliRequirements?.functional?.length ?? 0) > 0;
+    case 3:
+      return (
+        (phaseData.commandTree?.commands?.length ?? 0) > 0 &&
+        !!phaseData.commandTree?.rootBinary?.trim()
+      );
+    case 4:
+      return (phaseData.cliContract?.contracts?.length ?? 0) > 0;
+    case 5:
+      return (
+        (phaseData.cliConfig?.configFiles?.length ?? 0) > 0 ||
+        (phaseData.cliConfig?.envVars?.length ?? 0) > 0
+      );
+    case 6:
+      return !!phaseData.cliTerminalUx?.palette;
     default:
       return false;
   }

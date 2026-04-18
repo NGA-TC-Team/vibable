@@ -4,7 +4,13 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import { stripMemos } from "@/lib/strip-memos";
 import { phaseDataSchema } from "@/lib/schemas/phase-data";
 import { SHARE_URL_MAX_BYTES } from "@/lib/constants";
-import type { AgentSubType, PhaseData, Project, ProjectType } from "@/types/phases";
+import type {
+  AgentSubType,
+  CliSubType,
+  PhaseData,
+  Project,
+  ProjectType,
+} from "@/types/phases";
 
 interface ShareResult {
   url: string | null;
@@ -19,7 +25,9 @@ export function generateShareUrl(project: Project): ShareResult {
   const subQs =
     project.type === "agent" && project.agentSubType
       ? `&sub=${encodeURIComponent(project.agentSubType)}`
-      : "";
+      : project.type === "cli" && project.cliSubType
+        ? `&sub=${encodeURIComponent(project.cliSubType)}`
+        : "";
   const urlPath = `/workspace/shared?data=${compressed}&name=${encodeURIComponent(project.name)}&type=${project.type}${subQs}`;
   const fullUrl = `${window.location.origin}${urlPath}`;
 
@@ -34,6 +42,7 @@ export interface ParsedShare {
   name: string;
   type: ProjectType;
   agentSubType?: AgentSubType;
+  cliSubType?: CliSubType;
   phases: PhaseData;
 }
 
@@ -43,7 +52,7 @@ export function parseShareUrl(
   const data = searchParams.get("data");
   const name = searchParams.get("name");
   const type = searchParams.get("type") as ProjectType | null;
-  const sub = searchParams.get("sub") as AgentSubType | null;
+  const sub = searchParams.get("sub");
 
   if (!data || !name || !type) return null;
 
@@ -57,13 +66,20 @@ export function parseShareUrl(
 
     const agentSubType =
       type === "agent" && sub && ["claude-subagent", "openclaw"].includes(sub)
-        ? sub
+        ? (sub as AgentSubType)
         : undefined;
+    const cliSubType =
+      type === "cli" && sub && ["human-first", "agent-first", "hybrid"].includes(sub)
+        ? (sub as CliSubType)
+        : type === "cli"
+          ? ("hybrid" as CliSubType)
+          : undefined;
 
     return {
       name: decodeURIComponent(name),
       type,
       ...(agentSubType ? { agentSubType } : {}),
+      ...(cliSubType ? { cliSubType } : {}),
       phases: result.data as unknown as PhaseData,
     };
   } catch {

@@ -17,6 +17,11 @@ import { OpenClawArchitectureForm } from "@/components/phases/openclaw-architect
 import { OpenClawBehaviorForm } from "@/components/phases/openclaw-behavior-form";
 import { OpenClawToolsForm } from "@/components/phases/openclaw-tools-form";
 import { AgentSafetyForm } from "@/components/phases/agent-safety-form";
+import { CliRequirementsForm } from "@/components/phases/cli-requirements-form";
+import { CommandTreeForm } from "@/components/phases/command-tree-form";
+import { CliContractForm } from "@/components/phases/cli-contract-form";
+import { CliConfigForm } from "@/components/phases/cli-config-form";
+import { CliTerminalUxForm } from "@/components/phases/cli-terminal-ux-form";
 
 export type PhaseFormComponent = ComponentType<{ disabled?: boolean }>;
 
@@ -26,6 +31,16 @@ export function getPhaseFormComponent(
   phaseIndex: number,
 ): PhaseFormComponent | null {
   const sub = agentSubType ?? "claude-subagent";
+  if (projectType === "cli") {
+    if (phaseIndex === 0) return OverviewForm;
+    if (phaseIndex === 1) return UserScenarioForm;
+    if (phaseIndex === 2) return CliRequirementsForm;
+    if (phaseIndex === 3) return CommandTreeForm;
+    if (phaseIndex === 4) return CliContractForm;
+    if (phaseIndex === 5) return CliConfigForm;
+    if (phaseIndex === 6) return CliTerminalUxForm;
+    return null;
+  }
   if (projectType === "agent") {
     if (phaseIndex === 0) return OverviewForm;
     if (phaseIndex === 1) return UserScenarioForm;
@@ -72,7 +87,24 @@ export function getPhaseTooltipKey(
   | "phase.agentArchitecture"
   | "phase.agentBehavior"
   | "phase.agentTools"
-  | "phase.agentSafety" {
+  | "phase.agentSafety"
+  | "phase.cliRequirements"
+  | "phase.commandTree"
+  | "phase.cliContract"
+  | "phase.cliConfig"
+  | "phase.cliTerminalUx" {
+  if (projectType === "cli") {
+    const keys = [
+      "phase.overview",
+      "phase.userScenario",
+      "phase.cliRequirements",
+      "phase.commandTree",
+      "phase.cliContract",
+      "phase.cliConfig",
+      "phase.cliTerminalUx",
+    ] as const;
+    return keys[phaseIndex] ?? "phase.overview";
+  }
   if (projectType === "agent") {
     const keys = [
       "phase.overview",

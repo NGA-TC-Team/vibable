@@ -64,9 +64,42 @@ export interface OverviewPhase {
   milestoneGroups: MilestoneGroup[];
   references: Reference[];
   techStack?: string;
+  /** type === "cli"일 때만 사용. 기획 개요 단계에서 배포·실행 메타를 같이 잡는다. */
+  cliMeta?: {
+    binaryName: string;
+    distributionChannels: Array<
+      | "homebrew"
+      | "npm"
+      | "cargo"
+      | "pip"
+      | "go-install"
+      | "apt"
+      | "snap"
+      | "winget"
+      | "scoop"
+      | "docker"
+      | "curl-script"
+      | "standalone-binary"
+    >;
+    primaryRuntime:
+      | "node"
+      | "bun"
+      | "deno"
+      | "python"
+      | "go"
+      | "rust"
+      | "shell"
+      | "other";
+  };
 }
 
 // ─── Phase 1: 유저 시나리오 ───
+
+export type PersonaActorKind =
+  | "human-operator"
+  | "ai-agent"
+  | "ci-pipeline"
+  | "other";
 
 export interface Persona {
   id: string;
@@ -83,6 +116,10 @@ export interface Persona {
   goals: string[];
   successCriteria: string[];
   quote: string;
+  /** CLI 프로젝트에서 페르소나가 누구인지 명시 (사람/에이전트/CI) */
+  actorKind?: PersonaActorKind;
+  /** "터미널 대화식", "GitHub Actions", "Claude Code Tool Use" 등 호출 컨텍스트 */
+  invocationContext?: string;
 }
 
 export interface UserStory {
@@ -775,6 +812,385 @@ export interface AgentSafetyPhase {
   rollbackPlan: string;
 }
 
+// ─── CLI 전용 페이즈 (Phase 2~6, type === "cli") ───
+
+export type CliSubType = "human-first" | "agent-first" | "hybrid";
+
+export type CliDistributionChannel =
+  | "homebrew"
+  | "npm"
+  | "cargo"
+  | "pip"
+  | "go-install"
+  | "apt"
+  | "snap"
+  | "winget"
+  | "scoop"
+  | "docker"
+  | "curl-script"
+  | "standalone-binary";
+
+export type CliRuntime =
+  | "node"
+  | "bun"
+  | "deno"
+  | "python"
+  | "go"
+  | "rust"
+  | "shell"
+  | "other";
+
+export interface CliPlatformMatrix {
+  os: Array<"macos" | "linux" | "windows" | "bsd">;
+  arch: Array<"x86_64" | "arm64" | "riscv64">;
+  shells: Array<"bash" | "zsh" | "fish" | "powershell" | "nushell" | "pwsh">;
+  minNodeVersion?: string;
+  minBunVersion?: string;
+  minPythonVersion?: string;
+  minGoVersion?: string;
+}
+
+export interface DestructiveActionPolicy {
+  requiresConfirmation: boolean;
+  confirmationFlag: string;
+  dryRunSupported: boolean;
+  auditTrail: "stderr-log" | "file" | "none";
+}
+
+export interface CliPerformanceSlo {
+  coldStartMs?: number;
+  p95CommandMs?: number;
+  streamingLatencyMs?: number;
+  binarySizeMb?: number;
+}
+
+export type CliAuthMethod =
+  | "env-var"
+  | "config-file"
+  | "oauth-device-code"
+  | "oauth-browser"
+  | "static-token"
+  | "none";
+
+export interface CliTelemetry {
+  enabled: boolean;
+  optOutMechanism: string;
+  collects: string[];
+}
+
+/** Phase 2 (cli): 공통 요구사항 + CLI 확장 */
+export interface CliRequirementsPhase extends RequirementsPhase {
+  platformMatrix?: CliPlatformMatrix;
+  destructivePolicy?: DestructiveActionPolicy;
+  performance?: CliPerformanceSlo;
+  authMethods?: CliAuthMethod[];
+  offlineFirst?: boolean;
+  telemetry?: CliTelemetry;
+}
+
+export type CommandConvention =
+  | "posix-minimal"
+  | "verb-noun"
+  | "noun-verb"
+  | "kubernetes-style"
+  | "rust-clap"
+  | "cobra-go"
+  | "custom";
+
+export type FlagKind =
+  | "boolean"
+  | "string"
+  | "number"
+  | "enum"
+  | "path"
+  | "duration"
+  | "count"
+  | "stringArray";
+
+export interface CliFlag {
+  id: string;
+  long: string;
+  short?: string;
+  kind: FlagKind;
+  enumValues?: string[];
+  defaultValue?: string;
+  required: boolean;
+  repeatable: boolean;
+  envVar?: string;
+  mutuallyExclusiveWith?: string[];
+  description: string;
+  hiddenFromHelp?: boolean;
+}
+
+export interface CliPositional {
+  id: string;
+  name: string;
+  kind: "required" | "optional" | "variadic";
+  description: string;
+}
+
+export type CommandStability = "experimental" | "beta" | "stable" | "deprecated";
+
+export interface CommandNode {
+  id: string;
+  name: string;
+  aliases: string[];
+  summary: string;
+  description: string;
+  positional: CliPositional[];
+  localFlags: CliFlag[];
+  inheritedFlags: string[];
+  hidden: boolean;
+  stability: CommandStability;
+  agentSafe: boolean;
+  children: CommandNode[];
+}
+
+export interface CommandTreePhase {
+  rootBinary: string;
+  convention: CommandConvention;
+  globalFlags: CliFlag[];
+  commands: CommandNode[];
+  completions: {
+    shells: Array<"bash" | "zsh" | "fish" | "powershell">;
+    strategy: "static-generated" | "runtime-completion" | "none";
+  };
+  helpStyle: {
+    includeExamplesInHelp: boolean;
+    includeEnvVarsInHelp: boolean;
+    colorizeHelp: boolean;
+  };
+}
+
+export type StdinFormat = "none" | "text" | "json" | "ndjson" | "binary";
+
+export type StdoutMode =
+  | "human-pretty"
+  | "human-plain"
+  | "json"
+  | "ndjson"
+  | "yaml"
+  | "custom-template";
+
+export type ExitCodeCategory =
+  | "success"
+  | "usage"
+  | "input"
+  | "unavailable"
+  | "software"
+  | "config"
+  | "temporary"
+  | "permission";
+
+export interface ExitCodeMapping {
+  code: number;
+  when: string;
+  category: ExitCodeCategory;
+}
+
+export interface CliSample {
+  label: string;
+  mode: "human" | "agent";
+  invocation: string;
+  stdin?: string;
+  stdout: string;
+  stderr?: string;
+  exitCode: number;
+}
+
+export interface CommandContract {
+  commandId: string;
+  stdinFormat: StdinFormat;
+  stdinSchemaRef?: string;
+  stdoutModes: StdoutMode[];
+  defaultMode: StdoutMode;
+  stdoutSchemaVersion?: string;
+  stdoutSchemaRef?: string;
+  stderr: {
+    diagnosticsFormat: "plain" | "json";
+    includesStackTrace: boolean;
+  };
+  exitCodes: ExitCodeMapping[];
+  streaming: "none" | "stdout-ndjson" | "sse-like";
+  interactivity: {
+    promptsIfTTY: boolean;
+    nonInteractiveFallback: string;
+    respectsNoInput: boolean;
+  };
+  progressReporting: "none" | "spinner" | "bar" | "events";
+  idempotent: boolean;
+  safeToRetry: boolean;
+  samples: CliSample[];
+}
+
+export interface CliContractPhase {
+  contracts: CommandContract[];
+  globalConventions: {
+    piscesRule: boolean;
+    quietFlag: string;
+    verboseFlag: string;
+    jsonFlag: string;
+    formatFlag: string;
+  };
+}
+
+export type ConfigFormat = "toml" | "yaml" | "json" | "ini" | "dotenv";
+
+export type SecretStore =
+  | "os-keychain"
+  | "env-var"
+  | "plain-file"
+  | "encrypted-file"
+  | "external-vault";
+
+export interface ConfigFileSpec {
+  id: string;
+  locationPriority: string[];
+  format: ConfigFormat;
+  jsonSchema: string;
+  description: string;
+  mergeStrategy: "deep" | "override" | "array-append";
+}
+
+export interface EnvVarSpec {
+  id: string;
+  name: string;
+  purpose: string;
+  required: boolean;
+  sensitive: boolean;
+  defaultValue?: string;
+  boundFlagId?: string;
+}
+
+export interface SecretsPolicy {
+  supportedStores: SecretStore[];
+  preferredStore: SecretStore;
+  rotationPolicy: string;
+  redactInLogs: boolean;
+}
+
+export interface FilesystemLayout {
+  configDir: string;
+  cacheDir: string;
+  stateDir: string;
+  logsDir: string;
+  ensureCreated: boolean;
+}
+
+export interface OutputSchemaSpec {
+  id: string;
+  version: string;
+  describes: string;
+  jsonSchema: string;
+  stabilityGuarantee: "experimental" | "beta" | "stable";
+}
+
+export interface CliConfigPhase {
+  configFiles: ConfigFileSpec[];
+  envVars: EnvVarSpec[];
+  secrets: SecretsPolicy;
+  fsLayout: FilesystemLayout;
+  outputSchemas: OutputSchemaSpec[];
+  entityReuse: boolean;
+}
+
+export type AnsiColor =
+  | "black"
+  | "red"
+  | "green"
+  | "yellow"
+  | "blue"
+  | "magenta"
+  | "cyan"
+  | "white"
+  | "brightBlack"
+  | "brightRed"
+  | "brightGreen"
+  | "brightYellow"
+  | "brightBlue"
+  | "brightMagenta"
+  | "brightCyan"
+  | "brightWhite";
+
+export interface TerminalPalette {
+  primary: AnsiColor;
+  success: AnsiColor;
+  warning: AnsiColor;
+  danger: AnsiColor;
+  info: AnsiColor;
+  muted: AnsiColor;
+  truecolorHex?: {
+    primary?: string;
+    success?: string;
+    warning?: string;
+    danger?: string;
+    info?: string;
+    muted?: string;
+  };
+  respectNoColor: true;
+}
+
+export type LogLevel = "silent" | "error" | "warn" | "info" | "debug" | "trace";
+
+export interface LogLevelPolicy {
+  levels: LogLevel[];
+  defaultLevel: "info" | "warn";
+  verboseFlag: string;
+  quietFlag: string;
+  envOverride: string;
+}
+
+export type HelpSection =
+  | "usage"
+  | "description"
+  | "flags"
+  | "commands"
+  | "examples"
+  | "env-vars"
+  | "exit-codes"
+  | "see-also";
+
+export interface HelpTemplate {
+  sections: HelpSection[];
+  headerStyle: "uppercase" | "bold" | "color-muted";
+  exampleCount: number;
+  includeAgentSection: boolean;
+}
+
+export interface ErrorMessageTemplate {
+  id: string;
+  scenario: string;
+  whatWentWrong: string;
+  whyItHappened: string;
+  howToFix: string;
+  relatedCommand?: string;
+  exitCode: number;
+}
+
+export interface AgentFriendlinessChecklist {
+  stableJsonOutput: boolean;
+  nonInteractiveFallback: boolean;
+  respectsTtyAndNoColor: boolean;
+  semanticExitCodes: boolean;
+  streamingEvents: boolean;
+  deterministicOutput: boolean;
+  mcpBridge: "native" | "wrapper" | "none";
+  nonInteractiveAuth: boolean;
+  tokenEfficient: boolean;
+}
+
+export interface CliTerminalUxPhase {
+  palette: TerminalPalette;
+  iconSet: "none" | "nerd-font" | "emoji" | "ascii";
+  tableStyle: "plain" | "unicode-box" | "markdown" | "github";
+  logPolicy: LogLevelPolicy;
+  helpTemplate: HelpTemplate;
+  errorTemplates: ErrorMessageTemplate[];
+  toneLevel: 1 | 2 | 3 | 4 | 5;
+  uxWritingGlossary: GlossaryEntry[];
+  agentChecklist: AgentFriendlinessChecklist;
+}
+
 export interface PhaseData {
   overview: OverviewPhase;
   userScenario: UserScenarioPhase;
@@ -789,6 +1205,12 @@ export interface PhaseData {
   agentBehavior?: AgentBehaviorPhase;
   agentTools?: AgentToolsPhase;
   agentSafety?: AgentSafetyPhase;
+  /** type === "cli"일 때 Phase 2~6 원천 데이터 */
+  cliRequirements?: CliRequirementsPhase;
+  commandTree?: CommandTreePhase;
+  cliContract?: CliContractPhase;
+  cliConfig?: CliConfigPhase;
+  cliTerminalUx?: CliTerminalUxPhase;
   memos: PhaseMemos;
 }
 
@@ -799,6 +1221,8 @@ export interface Workspace {
   name: string;
   createdAt: number;
   updatedAt: number;
+  /** 예제 프로젝트 시드 완료 플래그. 한 번 true가 되면 재시드하지 않는다. */
+  hasSeededExamples?: boolean;
 }
 
 export type ProjectType = "web" | "mobile" | "cli" | "agent";
@@ -810,6 +1234,10 @@ export interface Project {
   type: ProjectType;
   /** type === "agent"일 때 필수 */
   agentSubType?: AgentSubType;
+  /** type === "cli"일 때 필수 */
+  cliSubType?: CliSubType;
+  /** 아이디어 노트 루트 보드 id. 프로젝트 생성 시 자동 발급, 레거시는 lazy 생성. */
+  ideaNoteRootBoardId?: string;
   currentPhase: number;
   phases: PhaseData;
   createdAt: number;
@@ -851,6 +1279,29 @@ export const AGENT_PHASE_LABELS: Record<number, string> = {
   4: "에이전트 행동 설계",
   5: "연동 & 도구 설계",
   6: "안전 & 테스트 설계",
+};
+
+/** CLI 프로젝트 단일 페이즈 JSON / 붙여넣기용 키 (인덱스 0~6) */
+export const CLI_PHASE_KEYS = [
+  "overview",
+  "userScenario",
+  "cliRequirements",
+  "commandTree",
+  "cliContract",
+  "cliConfig",
+  "cliTerminalUx",
+] as const;
+
+export type CliPhaseKey = (typeof CLI_PHASE_KEYS)[number];
+
+export const CLI_PHASE_LABELS: Record<number, string> = {
+  0: "기획 개요",
+  1: "유저·에이전트 시나리오",
+  2: "CLI 요구사항",
+  3: "커맨드 구조",
+  4: "입출력 계약",
+  5: "설정 & 데이터",
+  6: "터미널 UX",
 };
 
 export const PHASE_LABELS: Record<number, string> = {

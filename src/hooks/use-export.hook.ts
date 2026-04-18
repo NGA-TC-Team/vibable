@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { stripMemos } from "@/lib/strip-memos";
 import { generateDesignMd } from "@/components/export/design-md-generator";
+import { generateCliReferenceMd } from "@/components/export/cli-reference-md-generator";
 import {
   generatePhaseMarkdown,
   type PhaseMarkdownExportKey,
@@ -28,6 +29,9 @@ export function useExport() {
       schemaVersion: SCHEMA_VERSION,
       ...(project.type === "agent" && project.agentSubType
         ? { agentSubType: project.agentSubType }
+        : {}),
+      ...(project.type === "cli" && project.cliSubType
+        ? { cliSubType: project.cliSubType }
         : {}),
     };
     const payload =
@@ -55,6 +59,17 @@ export function useExport() {
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     downloadBlob(blob, "DESIGN.md");
     toast.success("DESIGN.md 파일이 다운로드되었습니다");
+  };
+
+  const exportCliReferenceMd = (project: Project) => {
+    if (project.type !== "cli") {
+      toast.error("CLI 프로젝트에서만 CLI_REFERENCE.md를 생성할 수 있습니다");
+      return;
+    }
+    const md = generateCliReferenceMd(project);
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    downloadBlob(blob, "CLI_REFERENCE.md");
+    toast.success("CLI_REFERENCE.md 파일이 다운로드되었습니다");
   };
 
   const exportPdf = (project: Project) => {
@@ -101,5 +116,12 @@ export function useExport() {
     toast.success("마크다운 파일이 다운로드되었습니다");
   };
 
-  return { exportJson, exportDesignMd, exportPdf, exportPhaseMarkdown, exportAgentZip };
+  return {
+    exportJson,
+    exportDesignMd,
+    exportCliReferenceMd,
+    exportPdf,
+    exportPhaseMarkdown,
+    exportAgentZip,
+  };
 }

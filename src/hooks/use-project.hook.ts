@@ -4,9 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { db, ensureDefaultWorkspace, DEFAULT_WORKSPACE_ID } from "@/lib/db";
 import {
   createAgentProjectPhaseData,
+  createCliProjectPhaseData,
   createDefaultPhaseData,
 } from "@/lib/schemas/phase-data";
-import type { AgentSubType, Project, ProjectType } from "@/types/phases";
+import { buildOnboardingBoard } from "@/lib/idea-note/onboarding";
+import type { AgentSubType, CliSubType, Project, ProjectType } from "@/types/phases";
 
 // ─── Query Keys ───
 
@@ -54,6 +56,7 @@ interface CreateProjectInput {
   name: string;
   type: ProjectType;
   agentSubType?: AgentSubType;
+  cliSubType?: CliSubType;
   initialPhases?: Project["phases"];
 }
 
@@ -65,24 +68,50 @@ export function useCreateProject() {
       if (input.type === "agent" && !input.agentSubType) {
         throw new Error("agent 프로젝트에는 agentSubType이 필요합니다");
       }
+      if (input.type === "cli" && !input.cliSubType) {
+        throw new Error("cli 프로젝트에는 cliSubType이 필요합니다");
+      }
       const phases =
         input.initialPhases ??
         (input.type === "agent"
           ? createAgentProjectPhaseData(input.agentSubType!)
-          : createDefaultPhaseData());
+          : input.type === "cli"
+            ? createCliProjectPhaseData(input.cliSubType!)
+            : createDefaultPhaseData());
+
+      const projectId = crypto.randomUUID();
+      const { board: rootBoard, assets } = await buildOnboardingBoard(
+        projectId,
+        input.name,
+      );
+
       const project: Project = {
-        id: crypto.randomUUID(),
+        id: projectId,
         workspaceId: input.workspaceId,
         name: input.name,
         type: input.type,
         agentSubType:
           input.type === "agent" ? input.agentSubType : undefined,
+        cliSubType: input.type === "cli" ? input.cliSubType : undefined,
+        ideaNoteRootBoardId: rootBoard.id,
         currentPhase: 0,
         phases: phases as Project["phases"],
         createdAt: now,
         updatedAt: now,
       };
-      await db.projects.add(project);
+
+      await db.transaction(
+        "rw",
+        db.projects,
+        db.ideaBoards,
+        db.ideaAssets,
+        async () => {
+          await db.projects.add(project);
+          await db.ideaBoards.add(rootBoard);
+          if (assets.length) await db.ideaAssets.bulkAdd(assets);
+        },
+      );
+
       return project;
     },
     onSuccess: (project) => {
@@ -115,7 +144,19 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: async (id: string) => {
       const project = await db.projects.get(id);
-      await db.projects.delete(id);
+
+      await db.transaction(
+        "rw",
+        db.projects,
+        db.ideaBoards,
+        db.ideaAssets,
+        async () => {
+          await db.projects.delete(id);
+          await db.ideaBoards.where("projectId").equals(id).delete();
+          await db.ideaAssets.where("projectId").equals(id).delete();
+        },
+      );
+
       return project?.workspaceId ?? DEFAULT_WORKSPACE_ID;
     },
     onSuccess: (workspaceId) => {

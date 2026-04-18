@@ -10,7 +10,10 @@ import { EditorLayout } from "@/components/editor/editor-layout";
 import { useProject } from "@/hooks/use-project.hook";
 import { useAutoSave } from "@/hooks/use-auto-save.hook";
 import { useEditorStore } from "@/services/store/editor-store";
-import { phaseDataSchema } from "@/lib/schemas/phase-data";
+import {
+  createCliProjectPhaseData,
+  phaseDataSchema,
+} from "@/lib/schemas/phase-data";
 import type { PhaseData } from "@/types/phases";
 
 interface EditorClientProps {
@@ -23,6 +26,7 @@ export function EditorClient({ projectId }: EditorClientProps) {
   const setPhase = useEditorStore((s) => s.setPhase);
   const setProjectType = useEditorStore((s) => s.setProjectType);
   const setAgentSubType = useEditorStore((s) => s.setAgentSubType);
+  const setCliSubType = useEditorStore((s) => s.setCliSubType);
   const reset = useEditorStore((s) => s.reset);
 
   const [phase, setPhaseUrl] = useQueryState(
@@ -34,9 +38,28 @@ export function EditorClient({ projectId }: EditorClientProps) {
 
   useEffect(() => {
     if (project) {
-      setPhaseData(phaseDataSchema.parse(project.phases) as PhaseData);
+      const parsed = phaseDataSchema.parse(project.phases) as PhaseData;
+      // 기존 CLI 프로젝트(CLI 슬라이스 없음)를 hybrid 기본값으로 lazy 마이그레이션
+      const cliSubType =
+        project.type === "cli" ? project.cliSubType ?? "hybrid" : null;
+      let hydrated = parsed;
+      if (project.type === "cli") {
+        const defaults = createCliProjectPhaseData(
+          cliSubType ?? "hybrid",
+        ) as PhaseData;
+        hydrated = {
+          ...parsed,
+          cliRequirements: parsed.cliRequirements ?? defaults.cliRequirements,
+          commandTree: parsed.commandTree ?? defaults.commandTree,
+          cliContract: parsed.cliContract ?? defaults.cliContract,
+          cliConfig: parsed.cliConfig ?? defaults.cliConfig,
+          cliTerminalUx: parsed.cliTerminalUx ?? defaults.cliTerminalUx,
+        };
+      }
+      setPhaseData(hydrated);
       setProjectType(project.type);
       setAgentSubType(project.agentSubType ?? null);
+      setCliSubType(cliSubType);
       setPhase(phase);
     }
     return () => {

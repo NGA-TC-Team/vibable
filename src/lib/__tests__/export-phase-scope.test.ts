@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { getPhaseExportScope } from "../export-phase-scope";
-import { PHASE_KEYS, AGENT_PHASE_KEYS } from "@/types/phases";
+import { PHASE_KEYS, AGENT_PHASE_KEYS, CLI_PHASE_KEYS } from "@/types/phases";
 import type { Project, PhaseData } from "@/types/phases";
 import { createDefaultPhaseData } from "@/lib/schemas/phase-data";
 
-function makeProject(type: "web" | "agent"): Project {
+function makeProject(type: "web" | "agent" | "cli"): Project {
   return {
     id: "test-id",
     workspaceId: "default",
@@ -56,5 +56,17 @@ describe("getPhaseExportScope", () => {
     expect(webScope).toBe("requirements");
     expect(agentScope).toBe("agentRequirements");
     expect(webScope).not.toBe(agentScope);
+  });
+
+  it("정상: cli 프로젝트는 CLI_PHASE_KEYS 인덱스를 반환", () => {
+    const project = makeProject("cli");
+    CLI_PHASE_KEYS.forEach((key, index) => {
+      expect(getPhaseExportScope(project, index)).toBe(key);
+    });
+  });
+
+  it("정상: cli 프로젝트 인덱스 3은 commandTree를 반환", () => {
+    const project = makeProject("cli");
+    expect(getPhaseExportScope(project, 3)).toBe("commandTree");
   });
 });

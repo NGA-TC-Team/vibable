@@ -96,6 +96,7 @@ export function EditorLayout({ project, onPhaseChange }: EditorLayoutProps) {
           <div className="relative z-10 flex h-full flex-col">
             <div className="flex-1 min-h-0">
               <PhaseNav
+                projectId={project.id}
                 projectType={project.type}
                 onPhaseChange={onPhaseChange}
               />

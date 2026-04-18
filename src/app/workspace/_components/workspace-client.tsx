@@ -18,6 +18,7 @@ import {
   useProjects,
   useDeleteProject,
 } from "@/hooks/use-project.hook";
+import { useSeedExamples } from "@/hooks/use-seed-examples.hook";
 import { DEFAULT_WORKSPACE_ID } from "@/lib/db";
 import { toast } from "sonner";
 import type { ProjectType } from "@/types/phases";
@@ -34,6 +35,12 @@ export function WorkspaceClient() {
   const { data: workspace } = useWorkspace();
   const { data: projects, isLoading } = useProjects(DEFAULT_WORKSPACE_ID);
   const deleteProject = useDeleteProject();
+
+  useSeedExamples({
+    workspace,
+    isLoadingProjects: isLoading,
+    projectCount: projects?.length ?? 0,
+  });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

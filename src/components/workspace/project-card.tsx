@@ -7,12 +7,14 @@ import { ko } from "date-fns/locale";
 import {
   Bot,
   Globe,
+  Lightbulb,
   Smartphone,
   Terminal,
   Trash2,
   Pencil,
   MoreVertical,
 } from "lucide-react";
+import { useIdeaBoards } from "@/hooks/use-idea-note.hook";
 import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +89,8 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const completed = getCompletedPhaseCount(project);
   const total = PHASE_KEYS.length;
   const progressPct = Math.round((completed / total) * 100);
+  const { data: ideaBoards } = useIdeaBoards(project.id);
+  const ideaBoardCount = ideaBoards?.length ?? 0;
 
   return (
     <>
@@ -156,7 +160,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Badge variant={cfg.variant}>
+            <Badge variant={cfg.variant} className="px-3 py-1">
               {cfg.icon}
               {cfg.label}
             </Badge>
@@ -199,12 +203,20 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
                 </AnimatePresence>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(project.updatedAt, {
-                addSuffix: true,
-                locale: ko,
-              })}{" "}수정
-            </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {formatDistanceToNow(project.updatedAt, {
+                  addSuffix: true,
+                  locale: ko,
+                })}{" "}수정
+              </span>
+              {ideaBoardCount > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Lightbulb className="size-3" />
+                  {ideaBoardCount}
+                </span>
+              )}
+            </div>
           </CardContent>
         </Card>
       </Link>

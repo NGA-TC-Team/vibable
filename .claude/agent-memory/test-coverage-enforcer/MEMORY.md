@@ -1,0 +1,2 @@
+- [Project test setup](project_test_setup.md) — bun test vs bun run test 구분, vitest.config 적용 방식
+- [Test patterns](test_patterns.md) — 순수 함수·스키마·generator 테스트 패턴, 불변성 검증 방식

@@ -12,7 +12,12 @@ import {
 import { useExport } from "@/hooks/use-export.hook";
 import { useEditorStore } from "@/services/store/editor-store";
 import { getPhaseExportScope } from "@/lib/export-phase-scope";
-import { AGENT_PHASE_LABELS, PHASE_LABELS, type Project } from "@/types/phases";
+import {
+  AGENT_PHASE_LABELS,
+  CLI_PHASE_LABELS,
+  PHASE_LABELS,
+  type Project,
+} from "@/types/phases";
 
 interface ExportButtonsProps {
   project: Project;
@@ -20,7 +25,13 @@ interface ExportButtonsProps {
 }
 
 export function ExportButtons({ project, onFlushSave }: ExportButtonsProps) {
-  const { exportJson, exportDesignMd, exportPdf, exportAgentZip } = useExport();
+  const {
+    exportJson,
+    exportDesignMd,
+    exportCliReferenceMd,
+    exportPdf,
+    exportAgentZip,
+  } = useExport();
   const currentPhase = useEditorStore((s) => s.currentPhase);
 
   const handleExport = (fn: () => void) => {
@@ -29,7 +40,11 @@ export function ExportButtons({ project, onFlushSave }: ExportButtonsProps) {
   };
 
   const phaseLabel =
-    project.type === "agent" ? AGENT_PHASE_LABELS[currentPhase] : PHASE_LABELS[currentPhase];
+    project.type === "agent"
+      ? AGENT_PHASE_LABELS[currentPhase]
+      : project.type === "cli"
+        ? CLI_PHASE_LABELS[currentPhase]
+        : PHASE_LABELS[currentPhase];
 
   return (
     <DropdownMenu>
@@ -74,6 +89,14 @@ export function ExportButtons({ project, onFlushSave }: ExportButtonsProps) {
           >
             <FileText className="size-4" />
             DESIGN.md
+          </DropdownMenuItem>
+        )}
+        {project.type === "cli" && (
+          <DropdownMenuItem
+            onSelect={() => handleExport(() => exportCliReferenceMd(project))}
+          >
+            <FileText className="size-4" />
+            CLI_REFERENCE.md
           </DropdownMenuItem>
         )}
         <DropdownMenuItem

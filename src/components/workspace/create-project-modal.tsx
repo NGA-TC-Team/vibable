@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { PROJECT_TYPES } from "@/lib/project-types";
 import { useCreateProject } from "@/hooks/use-project.hook";
-import type { AgentSubType, ProjectType } from "@/types/phases";
+import type { AgentSubType, CliSubType, ProjectType } from "@/types/phases";
 
 function sinePath(yCenter: number, amplitude: number, periods: number): string {
   const totalWidth = 1200;
@@ -115,6 +115,28 @@ const AGENT_SUB_OPTIONS: {
   },
 ];
 
+const CLI_SUB_OPTIONS: {
+  value: CliSubType;
+  label: string;
+  desc: string;
+}[] = [
+  {
+    value: "human-first",
+    label: "🧑 인간 우선",
+    desc: "사람이 터미널에서 쓰는 CLI (ripgrep·fzf 류)",
+  },
+  {
+    value: "agent-first",
+    label: "🤖 에이전트 우선",
+    desc: "AI·스크립트·CI가 호출하는 CLI (MCP·JSON 중심)",
+  },
+  {
+    value: "hybrid",
+    label: "🔀 혼합 (권장)",
+    desc: "양쪽 모두 지원 (gh·docker·kubectl 류)",
+  },
+];
+
 interface CreateProjectModalProps {
   workspaceId: string;
   open?: boolean;
@@ -134,12 +156,14 @@ export function CreateProjectModal({
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("web");
   const [agentSubType, setAgentSubType] = useState<AgentSubType>("claude-subagent");
+  const [cliSubType, setCliSubType] = useState<CliSubType>("hybrid");
   const router = useRouter();
   const createProject = useCreateProject();
 
   const handleCreate = () => {
     if (!name.trim()) return;
     if (type === "agent" && !agentSubType) return;
+    if (type === "cli" && !cliSubType) return;
 
     createProject.mutate(
       {
@@ -147,6 +171,7 @@ export function CreateProjectModal({
         name: name.trim(),
         type,
         agentSubType: type === "agent" ? agentSubType : undefined,
+        cliSubType: type === "cli" ? cliSubType : undefined,
       },
       {
         onSuccess: (project) => {
@@ -154,6 +179,7 @@ export function CreateProjectModal({
           setName("");
           setType("web");
           setAgentSubType("claude-subagent");
+          setCliSubType("hybrid");
           router.push(`/workspace/${project.id}`);
         },
       },
@@ -227,6 +253,29 @@ export function CreateProjectModal({
                     className={cn(
                       "flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-colors",
                       agentSubType === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/50",
+                    )}
+                  >
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {type === "cli" && (
+            <div className="space-y-2">
+              <Label>CLI 하위 유형</Label>
+              <div className="grid grid-cols-1 gap-3">
+                {CLI_SUB_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setCliSubType(opt.value)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 rounded-xl border-2 p-4 text-left transition-colors",
+                      cliSubType === opt.value
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-muted-foreground/50",
                     )}

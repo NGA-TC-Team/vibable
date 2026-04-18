@@ -36,10 +36,10 @@ export function PreviewPanel() {
     return <PrintPreview />;
   }
 
-  const fullBleedPhase4 =
-    projectType !== "agent" && currentPhase === 4 && Preview;
+  const isFullBleed =
+    (projectType === "web" || projectType === "mobile") && currentPhase === 4;
 
-  if (fullBleedPhase4) {
+  if (isFullBleed && Preview) {
     return (
       <div className="h-full w-full overflow-hidden">
         <Preview />

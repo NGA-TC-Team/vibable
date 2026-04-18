@@ -17,6 +17,11 @@ import { OpenClawArchitecturePreview } from "@/components/preview/openclaw-archi
 import { OpenClawBehaviorPreview } from "@/components/preview/openclaw-behavior-preview";
 import { OpenClawToolsPreview } from "@/components/preview/openclaw-tools-preview";
 import { AgentSafetyPreview } from "@/components/preview/agent-safety-preview";
+import { CliRequirementsPreview } from "@/components/preview/cli-requirements-preview";
+import { CommandTreePreview } from "@/components/preview/command-tree-preview";
+import { CliContractPreview } from "@/components/preview/cli-contract-preview";
+import { CliConfigPreview } from "@/components/preview/cli-config-preview";
+import { CliTerminalUxPreview } from "@/components/preview/cli-terminal-ux-preview";
 
 export type PhasePreviewComponent = ComponentType;
 
@@ -26,6 +31,16 @@ export function getPhasePreviewComponent(
   phaseIndex: number,
 ): PhasePreviewComponent | null {
   const sub = agentSubType ?? "claude-subagent";
+  if (projectType === "cli") {
+    if (phaseIndex === 0) return OverviewPreview;
+    if (phaseIndex === 1) return UserScenarioPreview;
+    if (phaseIndex === 2) return CliRequirementsPreview;
+    if (phaseIndex === 3) return CommandTreePreview;
+    if (phaseIndex === 4) return CliContractPreview;
+    if (phaseIndex === 5) return CliConfigPreview;
+    if (phaseIndex === 6) return CliTerminalUxPreview;
+    return null;
+  }
   if (projectType === "agent") {
     if (phaseIndex === 0) return OverviewPreview;
     if (phaseIndex === 1) return UserScenarioPreview;

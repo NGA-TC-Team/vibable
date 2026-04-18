@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { AgentSubType, PhaseData, ProjectType, ScreenState } from "@/types/phases";
+import type { AgentSubType, CliSubType, PhaseData, ProjectType, ScreenState } from "@/types/phases";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 export type ActiveViewport = "mobile" | "tablet" | "desktop";
@@ -17,6 +17,7 @@ export type EditorState = {
   phaseData: PhaseData | null;
   projectType: ProjectType;
   agentSubType: AgentSubType | null;
+  cliSubType: CliSubType | null;
   activeViewport: ActiveViewport;
   isSidebarCollapsed: boolean;
   isPrintPreview: boolean;
@@ -37,6 +38,7 @@ export type EditorState = {
   updatePhaseData: (updater: (prev: PhaseData) => PhaseData) => void;
   setProjectType: (type: ProjectType) => void;
   setAgentSubType: (sub: AgentSubType | null) => void;
+  setCliSubType: (sub: CliSubType | null) => void;
   setActiveViewport: (viewport: ActiveViewport) => void;
   toggleSidebar: () => void;
   setInfoArchView: (view: InfoArchView) => void;
@@ -63,6 +65,7 @@ const initialState = {
   phaseData: null as PhaseData | null,
   projectType: "web" as ProjectType,
   agentSubType: null as AgentSubType | null,
+  cliSubType: null as CliSubType | null,
   activeViewport: "mobile" as ActiveViewport,
   isSidebarCollapsed: false,
   isPrintPreview: false,
@@ -94,6 +97,7 @@ export const useEditorStore = create<EditorState>()(
         })),
       setProjectType: (projectType) => set({ projectType }),
       setAgentSubType: (agentSubType) => set({ agentSubType }),
+      setCliSubType: (cliSubType) => set({ cliSubType }),
       setActiveViewport: (activeViewport) => set({ activeViewport }),
       toggleSidebar: () =>
         set((s) => ({ isSidebarCollapsed: !s.isSidebarCollapsed })),

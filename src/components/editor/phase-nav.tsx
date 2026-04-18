@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   FileText,
@@ -18,6 +20,11 @@ import {
   Sparkles,
   Plug,
   ShieldAlert,
+  Terminal,
+  GitBranch,
+  Repeat,
+  Settings,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   AGENT_PHASE_LABELS,
+  CLI_PHASE_LABELS,
   PHASE_LABELS,
   type PhaseData,
   type ProjectType,
@@ -38,7 +46,9 @@ import { useEditorStore } from "@/services/store/editor-store";
 import { useSystemRuntime } from "@/services/store/hooks";
 import {
   AGENT_PHASE_DATA_KEYS,
+  CLI_PHASE_DATA_KEYS,
   isAgentPhaseComplete,
+  isCliPhaseComplete,
   isLegacyPhaseComplete,
   LEGACY_PHASE_DATA_KEYS,
 } from "@/lib/phase-nav-config";
@@ -63,12 +73,26 @@ const agentPhaseIcons = [
   ShieldAlert,
 ];
 
+const cliPhaseIcons = [
+  FileText,
+  Users,
+  ListChecks,
+  GitBranch,
+  Repeat,
+  Settings,
+  Terminal,
+];
+
 interface PhaseNavProps {
+  projectId: string;
   projectType: ProjectType;
   onPhaseChange: (phase: number) => void;
 }
 
-export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
+export function PhaseNav({ projectId, projectType, onPhaseChange }: PhaseNavProps) {
+  const pathname = usePathname();
+  const ideaNoteHref = `/workspace/${projectId}/idea-note`;
+  const isIdeaNoteActive = pathname?.startsWith(ideaNoteHref) ?? false;
   const currentPhase = useEditorStore((s) => s.currentPhase);
   const phaseData = useEditorStore((s) => s.phaseData);
   const isSidebarCollapsed = useEditorStore((s) => s.isSidebarCollapsed);
@@ -77,24 +101,29 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
   const expandedItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [expandedIndicator, setExpandedIndicator] = useState({ top: 0, height: 0 });
 
-  const cliLabels: Record<number, string> = {
-    3: "커맨드 트리",
-    4: "입출력 명세",
-    6: "UX 라이팅",
-  };
-
   const isAgent = projectType === "agent";
-  const dataKeys = isAgent ? AGENT_PHASE_DATA_KEYS : LEGACY_PHASE_DATA_KEYS;
-  const phaseIcons = isAgent ? agentPhaseIcons : legacyPhaseIcons;
+  const isCli = projectType === "cli";
+  const dataKeys = isAgent
+    ? AGENT_PHASE_DATA_KEYS
+    : isCli
+      ? CLI_PHASE_DATA_KEYS
+      : LEGACY_PHASE_DATA_KEYS;
+  const phaseIcons = isAgent
+    ? agentPhaseIcons
+    : isCli
+      ? cliPhaseIcons
+      : legacyPhaseIcons;
 
   const completedCount = Array.from({ length: 7 }).reduce<number>((acc, _, i) => {
     if (!phaseData) return acc;
     const complete = isAgent
       ? isAgentPhaseComplete(i, phaseData as PhaseData)
-      : isLegacyPhaseComplete(
-          i,
-          phaseData[dataKeys[i] as keyof typeof phaseData],
-        );
+      : isCli
+        ? isCliPhaseComplete(i, phaseData as PhaseData)
+        : isLegacyPhaseComplete(
+            i,
+            phaseData[dataKeys[i] as keyof typeof phaseData],
+          );
     return acc + (complete ? 1 : 0);
   }, 0);
 
@@ -102,7 +131,7 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
 
   const labelForIndex = (i: number) => {
     if (isAgent) return AGENT_PHASE_LABELS[i];
-    if (projectType === "cli" && cliLabels[i]) return cliLabels[i];
+    if (isCli) return CLI_PHASE_LABELS[i];
     return PHASE_LABELS[i];
   };
 
@@ -165,6 +194,25 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
           />
           <span className="mb-2 text-[10px] text-muted-foreground">{completedCount}/7</span>
 
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href={ideaNoteHref}
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-lg transition-colors",
+                  isIdeaNoteActive
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <Lightbulb className="size-4" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">아이디어 노트</TooltipContent>
+          </Tooltip>
+
+          <div className="my-2 h-px w-6 shrink-0 bg-border" />
+
           <div className="relative flex flex-col items-center gap-1">
             <motion.div
               aria-hidden
@@ -218,6 +266,21 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
         </Button>
       </div>
 
+      <Link
+        href={ideaNoteHref}
+        className={cn(
+          "relative z-10 flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+          isIdeaNoteActive
+            ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <Lightbulb className="size-4 shrink-0" />
+        <span className="flex-1 truncate text-left">아이디어 노트</span>
+      </Link>
+
+      <div className="my-2 h-px w-full bg-border" />
+
       <div className="relative">
         <motion.div
           aria-hidden
@@ -231,18 +294,22 @@ export function PhaseNav({ projectType, onPhaseChange }: PhaseNavProps) {
             const Icon = phaseIcons[i];
             const baseLabel = labelForIndex(i);
             const finalLabel =
-              !isAgent && i === 4 && phaseData?.screenDesign?.pages?.length
+              !isAgent && !isCli && i === 4 && phaseData?.screenDesign?.pages?.length
                 ? `${baseLabel} (${phaseData.screenDesign.pages.length})`
-                : baseLabel;
+                : isCli && i === 3 && phaseData?.commandTree?.commands?.length
+                  ? `${baseLabel} (${phaseData.commandTree.commands.length})`
+                  : baseLabel;
 
             const dataKey = dataKeys[i];
             const complete = phaseData
               ? isAgent
                 ? isAgentPhaseComplete(i, phaseData as PhaseData)
-                : isLegacyPhaseComplete(
-                    i,
-                    phaseData[dataKey as keyof typeof phaseData],
-                  )
+                : isCli
+                  ? isCliPhaseComplete(i, phaseData as PhaseData)
+                  : isLegacyPhaseComplete(
+                      i,
+                      phaseData[dataKey as keyof typeof phaseData],
+                    )
               : false;
             const active = currentPhase === i;
 
